@@ -20,12 +20,25 @@ import {
   WalletAdapter, 
   TransferResult, 
   CompressedBalance,
-  GhostSolError,
   NETWORKS 
 } from './types';
 import { normalizeWallet } from './wallet';
 import { createCompressedRpc, validateRpcConnection } from './rpc';
 import { createTestRelayer, Relayer } from './relayer';
+import { 
+  GhostSolError, 
+  CompressionError, 
+  TransferError, 
+  DecompressionError,
+  ValidationError 
+} from './errors';
+import { BalanceCache, getCompressedBalance } from './balance';
+import { 
+  CompressionConfig,
+  compressTokens,
+  transferCompressedTokens,
+  decompressTokens 
+} from './compression';
 
 /**
  * Main GhostSol SDK class providing privacy-focused Solana operations
@@ -38,6 +51,7 @@ export class GhostSol {
   private rpc!: any; // ZK Compression RPC instance
   private wallet!: WalletAdapter;
   private relayer!: Relayer;
+  private balanceCache!: BalanceCache;
   private initialized: boolean = false;
 
   /**
@@ -63,7 +77,7 @@ export class GhostSol {
       const networkConfig = NETWORKS[cluster];
       
       if (!networkConfig) {
-        throw new GhostSolError(`Unsupported cluster: ${cluster}`);
+        throw new GhostSolError(`Unsupported cluster: ${cluster}`, 'CONFIG_ERROR');
       }
 
       // Create Solana connection
@@ -84,6 +98,9 @@ export class GhostSol {
 
       // Create TestRelayer using user's wallet as fee payer
       this.relayer = createTestRelayer(this.wallet, this.connection);
+
+      // Initialize balance cache with 30 second TTL
+      this.balanceCache = new BalanceCache({ ttl: 30000 });
 
       this.initialized = true;
       
@@ -120,10 +137,14 @@ export class GhostSol {
     this._assertInitialized();
     
     try {
-      // Query compressed token balance using ZK Compression RPC
-      // Using the actual API method getCompressedBalanceByOwner
-      const balanceResult = await this.rpc.getCompressedBalanceByOwner(this.wallet.publicKey);
-      return balanceResult?.amount || 0;
+      // Use balance cache for performance
+      const detailedBalance = await getCompressedBalance(
+        this.rpc,
+        this.wallet.publicKey,
+        this.balanceCache
+      );
+      
+      return detailedBalance.lamports;
       
     } catch (error) {
       // If no compressed account exists, return 0
@@ -152,36 +173,35 @@ export class GhostSol {
   async compress(lamports: number): Promise<string> {
     this._assertInitialized();
     
+    // Validate input
     if (lamports <= 0) {
-      throw new GhostSolError('Amount must be greater than 0');
+      throw new ValidationError('Amount must be greater than 0');
     }
 
     try {
-      // For now, implement a placeholder that demonstrates the SDK structure
-      // In a real implementation, this would use the actual ZK Compression API
+      // Build compression configuration
+      const config: CompressionConfig = {
+        rpc: this.rpc,
+        wallet: this.wallet,
+        connection: this.connection
+      };
       
-      // Create a simple transaction to demonstrate the flow
-      const transaction = new Transaction();
+      // Call compression module
+      const result = await compressTokens(config, lamports);
       
-      // Add a simple transfer instruction as a placeholder
-      // In reality, this would be a compress instruction
-      transaction.add({
-        keys: [
-          { pubkey: this.wallet.publicKey, isSigner: true, isWritable: true },
-        ],
-        programId: new PublicKey('11111111111111111111111111111111'), // System program
-        data: Buffer.alloc(0), // Placeholder data
-      });
-
-      // Submit transaction via relayer
-      const signature = await this.relayer.submitTransaction(transaction);
+      // Invalidate balance cache after successful compression
+      this.balanceCache.invalidate(this.wallet.publicKey.toBase58());
       
-      return signature;
+      return result.signature;
       
     } catch (error) {
-      throw new GhostSolError(
+      // Re-throw specialized errors as-is, wrap others
+      if (error instanceof CompressionError || error instanceof ValidationError) {
+        throw error;
+      }
+      
+      throw new CompressionError(
         `Failed to compress SOL: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        'COMPRESS_ERROR',
         error instanceof Error ? error : undefined
       );
     }
@@ -201,40 +221,38 @@ export class GhostSol {
   async transfer(recipientAddress: string, lamports: number): Promise<string> {
     this._assertInitialized();
     
+    // Validate input
     if (lamports <= 0) {
-      throw new GhostSolError('Amount must be greater than 0');
+      throw new ValidationError('Amount must be greater than 0');
     }
 
     try {
       // Validate recipient address
       const recipientPubkey = new PublicKey(recipientAddress);
       
-      // For now, implement a placeholder that demonstrates the SDK structure
-      // In a real implementation, this would use the actual ZK Compression transfer API
+      // Build compression configuration
+      const config: CompressionConfig = {
+        rpc: this.rpc,
+        wallet: this.wallet,
+        connection: this.connection
+      };
       
-      // Create a simple transaction to demonstrate the flow
-      const transaction = new Transaction();
+      // Call transfer module
+      const result = await transferCompressedTokens(config, recipientPubkey, lamports);
       
-      // Add a simple transfer instruction as a placeholder
-      // In reality, this would be a compressed token transfer instruction
-      transaction.add({
-        keys: [
-          { pubkey: this.wallet.publicKey, isSigner: true, isWritable: true },
-          { pubkey: recipientPubkey, isSigner: false, isWritable: true },
-        ],
-        programId: new PublicKey('11111111111111111111111111111111'), // System program
-        data: Buffer.alloc(0), // Placeholder data
-      });
-
-      // Submit transaction via relayer
-      const signature = await this.relayer.submitTransaction(transaction);
+      // Invalidate balance cache after successful transfer
+      this.balanceCache.invalidate(this.wallet.publicKey.toBase58());
       
-      return signature;
+      return result.signature;
       
     } catch (error) {
-      throw new GhostSolError(
+      // Re-throw specialized errors as-is, wrap others
+      if (error instanceof TransferError || error instanceof ValidationError) {
+        throw error;
+      }
+      
+      throw new TransferError(
         `Failed to transfer compressed tokens: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        'TRANSFER_ERROR',
         error instanceof Error ? error : undefined
       );
     }
@@ -254,40 +272,38 @@ export class GhostSol {
   async decompress(lamports: number, destination?: string): Promise<string> {
     this._assertInitialized();
     
+    // Validate input
     if (lamports <= 0) {
-      throw new GhostSolError('Amount must be greater than 0');
+      throw new ValidationError('Amount must be greater than 0');
     }
 
     try {
       // Use user's address as default destination
       const destPubkey = destination ? new PublicKey(destination) : this.wallet.publicKey;
       
-      // For now, implement a placeholder that demonstrates the SDK structure
-      // In a real implementation, this would use the actual ZK Compression decompress API
+      // Build compression configuration
+      const config: CompressionConfig = {
+        rpc: this.rpc,
+        wallet: this.wallet,
+        connection: this.connection
+      };
       
-      // Create a simple transaction to demonstrate the flow
-      const transaction = new Transaction();
+      // Call decompress module
+      const result = await decompressTokens(config, lamports, destPubkey);
       
-      // Add a simple transfer instruction as a placeholder
-      // In reality, this would be a decompress instruction
-      transaction.add({
-        keys: [
-          { pubkey: this.wallet.publicKey, isSigner: true, isWritable: true },
-          { pubkey: destPubkey, isSigner: false, isWritable: true },
-        ],
-        programId: new PublicKey('11111111111111111111111111111111'), // System program
-        data: Buffer.alloc(0), // Placeholder data
-      });
-
-      // Submit transaction via relayer
-      const signature = await this.relayer.submitTransaction(transaction);
+      // Invalidate balance cache after successful decompression
+      this.balanceCache.invalidate(this.wallet.publicKey.toBase58());
       
-      return signature;
+      return result.signature;
       
     } catch (error) {
-      throw new GhostSolError(
+      // Re-throw specialized errors as-is, wrap others
+      if (error instanceof DecompressionError || error instanceof ValidationError) {
+        throw error;
+      }
+      
+      throw new DecompressionError(
         `Failed to decompress SOL: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        'DECOMPRESS_ERROR',
         error instanceof Error ? error : undefined
       );
     }
@@ -325,6 +341,21 @@ export class GhostSol {
         error instanceof Error ? error : undefined
       );
     }
+  }
+
+  /**
+   * Force refresh balance cache for current user
+   * 
+   * This method invalidates the cached balance and fetches fresh data
+   * from the blockchain. Useful after transactions to get updated balances.
+   * 
+   * @returns Promise resolving when refresh is complete
+   */
+  async refreshBalance(): Promise<void> {
+    this._assertInitialized();
+    this.balanceCache.invalidate(this.wallet.publicKey.toBase58());
+    // Fetch fresh balance to populate cache
+    await this.getBalance();
   }
 
   /**

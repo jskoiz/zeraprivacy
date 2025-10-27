@@ -14,6 +14,7 @@
  */
 
 import { PublicKey, Connection } from '@solana/web3.js';
+import { Rpc } from '@lightprotocol/stateless.js';
 
 /**
  * Configuration options for initializing the GhostSol SDK
@@ -72,20 +73,6 @@ export interface CompressedBalance {
   exists: boolean;
   /** Last updated block height */
   lastUpdated?: number;
-}
-
-/**
- * Error class for GhostSol SDK specific errors
- */
-export class GhostSolError extends Error {
-  constructor(
-    message: string,
-    public code?: string,
-    public cause?: Error
-  ) {
-    super(message);
-    this.name = 'GhostSolError';
-  }
 }
 
 /**

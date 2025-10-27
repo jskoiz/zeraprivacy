@@ -155,6 +155,20 @@ export async function getDetailedBalance() {
 }
 
 /**
+ * Force refresh balance cache for current user
+ * 
+ * This method invalidates the cached balance and fetches fresh data
+ * from the blockchain. Useful after transactions to get updated balances.
+ * 
+ * @returns Promise resolving when refresh is complete
+ * @throws Error if refresh fails
+ */
+export async function refreshBalance(): Promise<void> {
+  const instance = _getInstance();
+  return await instance.refreshBalance();
+}
+
+/**
  * Check if the SDK is properly initialized
  * 
  * @returns True if SDK is initialized and ready to use
@@ -181,5 +195,12 @@ function _getInstance(): GhostSol {
 
 // Re-export types for convenience
 export type { GhostSolConfig, WalletAdapter, TransferResult, CompressedBalance } from './core/types';
-export { GhostSolError } from './core/types';
+export { 
+  GhostSolError, 
+  CompressionError, 
+  TransferError, 
+  DecompressionError,
+  ValidationError,
+  RpcError 
+} from './core/errors';
 export { GhostSol } from './core/ghost-sol';
