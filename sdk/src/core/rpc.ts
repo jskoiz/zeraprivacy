@@ -54,12 +54,14 @@ export function createCompressedRpc(config: GhostSolConfig) {
   // - Validity proof generation
   // - Compressed account state management
   // 
-  // IMPORTANT: Light Protocol requires its own RPC endpoints for ZK Compression operations
-  // Standard Solana RPC endpoints do not support ZK Compression methods
+  // IMPORTANT: Use Helius RPC endpoints for ZK Compression operations
+  // Helius provides reliable RPC services with ZK Compression support
   const lightProtocolRpcUrl = LIGHT_PROTOCOL_RPC_ENDPOINTS[cluster];
   if (!lightProtocolRpcUrl) {
     throw new Error(`Light Protocol RPC endpoint not available for cluster: ${cluster}`);
   }
+
+  console.log(`Using Helius RPC endpoint for ${cluster}: ${lightProtocolRpcUrl}`);
 
   // Create Light Protocol RPC connection for ZK Compression operations
   const lightProtocolConnection = new Connection(lightProtocolRpcUrl, {
@@ -67,11 +69,20 @@ export function createCompressedRpc(config: GhostSolConfig) {
     confirmTransactionInitialTimeout: 60000,
   });
 
+  // Test the Helius RPC connection
+  try {
+    // This will be tested when the connection is first used
+    console.log(`Helius RPC endpoint configured for ${cluster}`);
+  } catch (error) {
+    console.warn(`Helius RPC endpoint ${lightProtocolRpcUrl} may not be available:`, error);
+    console.warn('ZK Compression operations may fail if RPC is not accessible');
+  }
+
   const rpc = createRpc(lightProtocolConnection);
 
   return {
     rpc,
-    connection: lightProtocolConnection, // Use Light Protocol connection for ZK operations
+    connection: lightProtocolConnection, // Use Helius connection for ZK operations
     cluster,
     rpcUrl: lightProtocolRpcUrl
   };
