@@ -1,0 +1,21 @@
+{
+  "name": "ghost-sol",
+  "version": "0.1.0",
+  "description": "Privacy SDK for Solana developers using ZK Compression",
+  "private": true,
+  "workspaces": [
+    "sdk",
+    "examples/nextjs-demo"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "dev": "npm run dev --workspaces"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
