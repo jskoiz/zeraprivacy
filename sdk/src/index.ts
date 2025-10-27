@@ -70,14 +70,13 @@ export async function getBalance(): Promise<number> {
  * This is the "shield" operation that moves SOL from the user's regular
  * account into a compressed token account for private transfers.
  * 
- * @param amount - Amount to compress in SOL (will be converted to lamports)
+ * @param amount - Amount to compress in lamports
  * @returns Promise resolving to transaction signature
  * @throws Error if compression fails
  */
 export async function compress(amount: number): Promise<string> {
   const instance = _getInstance();
-  const lamports = Math.floor(amount * 1e9); // Convert SOL to lamports
-  return await instance.compress(lamports);
+  return await instance.compress(amount);
 }
 
 /**
@@ -87,14 +86,13 @@ export async function compress(amount: number): Promise<string> {
  * ZK proofs to maintain privacy.
  * 
  * @param to - Recipient's public key as base58 string
- * @param amount - Amount to transfer in SOL (will be converted to lamports)
+ * @param amount - Amount to transfer in lamports
  * @returns Promise resolving to transaction signature
  * @throws Error if transfer fails
  */
 export async function transfer(to: string, amount: number): Promise<string> {
   const instance = _getInstance();
-  const lamports = Math.floor(amount * 1e9); // Convert SOL to lamports
-  return await instance.transfer(to, lamports);
+  return await instance.transfer(to, amount);
 }
 
 /**
@@ -103,14 +101,13 @@ export async function transfer(to: string, amount: number): Promise<string> {
  * This is the "unshield" operation that moves SOL from a compressed
  * token account back to a regular Solana account.
  * 
- * @param amount - Amount to decompress in SOL (will be converted to lamports)
+ * @param amount - Amount to decompress in lamports
  * @param to - Optional destination address (defaults to user's address)
  * @returns Promise resolving to transaction signature
  * @throws Error if decompression fails
  */
 export async function decompress(amount: number, to?: string): Promise<string> {
   const instance = _getInstance();
-  const lamports = Math.floor(amount * 1e9); // Convert SOL to lamports
   
   // Handle PublicKey conversion for string addresses
   let destination: string | undefined = to;
@@ -124,7 +121,7 @@ export async function decompress(amount: number, to?: string): Promise<string> {
     }
   }
   
-  return await instance.decompress(lamports, destination);
+  return await instance.decompress(amount, destination);
 }
 
 /**

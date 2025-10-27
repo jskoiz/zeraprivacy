@@ -102,3 +102,12 @@ export const NETWORKS: Record<string, NetworkConfig> = {
     commitment: 'confirmed'
   }
 };
+
+/**
+ * Light Protocol ZK Compression RPC endpoints
+ * These are required for ZK Compression operations
+ */
+export const LIGHT_PROTOCOL_RPC_ENDPOINTS = {
+  devnet: 'https://devnet.rpc.lightprotocol.com',
+  mainnet: 'https://rpc.lightprotocol.com'
+};

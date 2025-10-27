@@ -13,7 +13,7 @@
 
 import { Connection, Commitment } from '@solana/web3.js';
 import { createRpc } from '@lightprotocol/stateless.js';
-import { GhostSolConfig, NETWORKS } from './types';
+import { GhostSolConfig, NETWORKS, LIGHT_PROTOCOL_RPC_ENDPOINTS } from './types';
 
 /**
  * Create a ZK Compression RPC instance with proper configuration
@@ -53,13 +53,27 @@ export function createCompressedRpc(config: GhostSolConfig) {
   // - Connection to ZK Compression services
   // - Validity proof generation
   // - Compressed account state management
-  const rpc = createRpc(connection);
+  // 
+  // IMPORTANT: Light Protocol requires its own RPC endpoints for ZK Compression operations
+  // Standard Solana RPC endpoints do not support ZK Compression methods
+  const lightProtocolRpcUrl = LIGHT_PROTOCOL_RPC_ENDPOINTS[cluster];
+  if (!lightProtocolRpcUrl) {
+    throw new Error(`Light Protocol RPC endpoint not available for cluster: ${cluster}`);
+  }
+
+  // Create Light Protocol RPC connection for ZK Compression operations
+  const lightProtocolConnection = new Connection(lightProtocolRpcUrl, {
+    commitment: config.commitment || networkConfig.commitment,
+    confirmTransactionInitialTimeout: 60000,
+  });
+
+  const rpc = createRpc(lightProtocolConnection);
 
   return {
     rpc,
-    connection,
+    connection: lightProtocolConnection, // Use Light Protocol connection for ZK operations
     cluster,
-    rpcUrl
+    rpcUrl: lightProtocolRpcUrl
   };
 }
 

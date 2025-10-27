@@ -65,10 +65,6 @@ export interface CompressionResult {
  * ZK Compression APIs. It handles state tree selection, lookup table
  * management, and poseidon hasher initialization.
  * 
- * Implementation Note: This is currently a skeleton implementation.
- * Research is needed on the actual @lightprotocol/compressed-token API
- * to determine the correct function signatures and parameters.
- * 
  * @param config - Compression configuration with RPC, wallet, connection
  * @param lamports - Amount to compress in lamports
  * @returns Promise resolving to compression result with signature
@@ -83,17 +79,32 @@ export async function compressTokens(
   lamports: number
 ): Promise<CompressionResult> {
   try {
+    // Debug logging to understand the issue
+    console.log('Compression config:', {
+      rpc: !!config.rpc,
+      wallet: !!config.wallet,
+      walletPublicKey: config.wallet.publicKey?.toBase58(),
+      lamports,
+      connection: !!config.connection
+    });
+
     // Use stateless.js compress() function for SOL compression
-    // The payer and recipient are both the user's wallet
-    // StateTreeInfo is optional and will be auto-selected if not provided
+    // Signature: compress(rpc: Rpc, payer: Signer, lamports: number | BN, toAddress: PublicKey, outputStateTreeInfo?: StateTreeInfo, confirmOptions?: ConfirmOptions)
     const signature = await compress(
       config.rpc,
-      config.wallet,
+      config.wallet, // payer
       lamports,
-      config.wallet.publicKey
-      // outputStateTreeInfo is optional - auto-selected if not provided
-      // confirmOptions uses defaults
+      config.wallet.publicKey, // toAddress (user's own address)
+      undefined, // outputStateTreeInfo - auto-selected if not provided
+      undefined  // confirmOptions - uses defaults
     );
+    
+    console.log('Compress result:', { signature, signatureType: typeof signature });
+    
+    // Check if signature is valid
+    if (!signature) {
+      throw new Error('Compress function returned undefined signature');
+    }
     
     return {
       signature,
@@ -103,6 +114,7 @@ export async function compressTokens(
     };
     
   } catch (error) {
+    console.error('Compression error details:', error);
     throw new CompressionError(
       `Failed to compress ${lamports} lamports: ${error instanceof Error ? error.message : 'Unknown error'}`,
       error instanceof Error ? error : undefined
@@ -115,10 +127,6 @@ export async function compressTokens(
  * 
  * This function handles private transfers using ZK proofs to maintain
  * transaction privacy while ensuring validity.
- * 
- * Implementation Note: This is currently a skeleton implementation.
- * Research is needed on the actual transfer API to determine the
- * correct function signatures and parameters.
  * 
  * @param config - Compression configuration
  * @param recipient - Recipient's public key
@@ -138,16 +146,15 @@ export async function transferCompressedTokens(
 ): Promise<CompressionResult> {
   try {
     // Use stateless.js transfer() function for private transfers
-    // Owner and payer are both the user's wallet
-    // StateTreeInfo is optional and will be auto-selected if not provided
+    // Signature: transfer(rpc: Rpc, payer: Signer, lamports: number | BN, owner: Signer, toAddress: PublicKey, outputStateTreeInfo?: StateTreeInfo, confirmOptions?: ConfirmOptions)
     const signature = await transfer(
       config.rpc,
       config.wallet, // payer
       lamports,
       config.wallet, // owner
-      recipient
-      // outputStateTreeInfo is optional - auto-selected if not provided
-      // confirmOptions uses defaults
+      recipient, // toAddress
+      undefined, // outputStateTreeInfo - auto-selected if not provided
+      undefined  // confirmOptions - uses defaults
     );
     
     return {
@@ -171,10 +178,6 @@ export async function transferCompressedTokens(
  * This function handles the unshield operation, moving tokens from
  * the compressed token account back to a regular Solana account.
  * 
- * Implementation Note: This is currently a skeleton implementation.
- * Research is needed on the actual decompress API to determine the
- * correct function signatures and parameters.
- * 
  * @param config - Compression configuration
  * @param lamports - Amount to decompress in lamports
  * @param destination - Optional destination public key (defaults to wallet)
@@ -196,6 +199,7 @@ export async function decompressTokens(
 ): Promise<CompressionResult> {
   try {
     // Use stateless.js decompress() function to move SOL back to regular account
+    // Signature: decompress(rpc: Rpc, payer: Signer, lamports: number | BN, recipient: PublicKey, confirmOptions?: ConfirmOptions)
     // Use provided destination or default to user's wallet
     const destPubkey = destination || config.wallet.publicKey;
     
@@ -203,8 +207,8 @@ export async function decompressTokens(
       config.rpc,
       config.wallet, // payer
       lamports,
-      destPubkey // recipient
-      // confirmOptions uses defaults
+      destPubkey, // recipient
+      undefined  // confirmOptions - uses defaults
     );
     
     return {

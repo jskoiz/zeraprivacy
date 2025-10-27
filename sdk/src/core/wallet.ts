@@ -128,3 +128,4 @@ export function getWalletAddress(wallet?: WalletAdapter): string {
   
   return wallet!.publicKey.toBase58();
 }
+
