@@ -22,8 +22,9 @@
 
 import { PublicKey, Connection } from '@solana/web3.js';
 import { compress, transfer, decompress, Rpc } from '@lightprotocol/stateless.js';
-import { WalletAdapter } from './types';
+import { ExtendedWalletAdapter } from './types';
 import { CompressionError, TransferError, DecompressionError } from './errors';
+import { extractRawKeypair } from './wallet';
 
 /**
  * Configuration for compression operations
@@ -35,8 +36,8 @@ import { CompressionError, TransferError, DecompressionError } from './errors';
 export interface CompressionConfig {
   /** ZK Compression RPC instance for compressed operations */
   rpc: Rpc;
-  /** Wallet adapter for signing transactions */
-  wallet: WalletAdapter;
+  /** Extended wallet adapter with raw Keypair access for signing transactions */
+  wallet: ExtendedWalletAdapter;
   /** Solana connection for blockchain operations */
   connection: Connection;
 }
@@ -88,11 +89,14 @@ export async function compressTokens(
       connection: !!config.connection
     });
 
+    // Extract raw Keypair for stateless.js operations
+    const rawKeypair = extractRawKeypair(config.wallet);
+    
     // Use stateless.js compress() function for SOL compression
     // Signature: compress(rpc: Rpc, payer: Signer, lamports: number | BN, toAddress: PublicKey, outputStateTreeInfo?: StateTreeInfo, confirmOptions?: ConfirmOptions)
     const signature = await compress(
       config.rpc,
-      config.wallet, // payer
+      rawKeypair, // payer (raw Keypair required by stateless.js)
       lamports,
       config.wallet.publicKey, // toAddress (user's own address)
       undefined, // outputStateTreeInfo - auto-selected if not provided
@@ -145,13 +149,16 @@ export async function transferCompressedTokens(
   lamports: number
 ): Promise<CompressionResult> {
   try {
+    // Extract raw Keypair for stateless.js operations
+    const rawKeypair = extractRawKeypair(config.wallet);
+    
     // Use stateless.js transfer() function for private transfers
     // Signature: transfer(rpc: Rpc, payer: Signer, lamports: number | BN, owner: Signer, toAddress: PublicKey, outputStateTreeInfo?: StateTreeInfo, confirmOptions?: ConfirmOptions)
     const signature = await transfer(
       config.rpc,
-      config.wallet, // payer
+      rawKeypair, // payer (raw Keypair required by stateless.js)
       lamports,
-      config.wallet, // owner
+      rawKeypair, // owner (raw Keypair required by stateless.js)
       recipient, // toAddress
       undefined, // outputStateTreeInfo - auto-selected if not provided
       undefined  // confirmOptions - uses defaults
@@ -198,6 +205,9 @@ export async function decompressTokens(
   destination?: PublicKey
 ): Promise<CompressionResult> {
   try {
+    // Extract raw Keypair for stateless.js operations
+    const rawKeypair = extractRawKeypair(config.wallet);
+    
     // Use stateless.js decompress() function to move SOL back to regular account
     // Signature: decompress(rpc: Rpc, payer: Signer, lamports: number | BN, recipient: PublicKey, confirmOptions?: ConfirmOptions)
     // Use provided destination or default to user's wallet
@@ -205,7 +215,7 @@ export async function decompressTokens(
     
     const signature = await decompress(
       config.rpc,
-      config.wallet, // payer
+      rawKeypair, // payer (raw Keypair required by stateless.js)
       lamports,
       destPubkey, // recipient
       undefined  // confirmOptions - uses defaults

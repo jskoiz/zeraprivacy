@@ -52,6 +52,18 @@ function DashboardContent() {
   const handleAirdrop = async () => {
     if (!fundDevnet) return
     
+    // Show warning about airdrop limitations
+    if (!confirm(
+      '⚠️ Devnet airdrop often fails due to rate limiting.\n\n' +
+      'This may hang or fail with 429 errors.\n\n' + 
+      'Better alternatives:\n' +
+      '• Use https://faucet.solana.com\n' +
+      '• Send devnet SOL from another wallet\n\n' +
+      'Continue with airdrop anyway?'
+    )) {
+      return
+    }
+    
     setIsProcessing(true)
     try {
       const signature = await fundDevnet(2) // 2 SOL
@@ -64,6 +76,14 @@ function DashboardContent() {
       await refresh()
     } catch (error) {
       console.error('Airdrop failed:', error)
+      // Show user-friendly error with alternatives
+      alert(
+        '❌ Airdrop failed (this is common on devnet).\n\n' +
+        'Try these alternatives:\n' +
+        '• https://faucet.solana.com\n' +
+        '• Send SOL from another devnet wallet\n' +
+        `• CLI: solana airdrop 2 ${address} --url devnet`
+      )
     } finally {
       setIsProcessing(false)
     }

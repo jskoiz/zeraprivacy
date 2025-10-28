@@ -1,203 +1,363 @@
 /**
  * index.ts
  * 
- * Purpose: Provide simple function-based API using singleton pattern
+ * Purpose: Main SDK entry point with dual-mode support (Privacy vs Efficiency)
  * 
- * Dependencies:
- * - Core GhostSol class and types
- * - GlobalThis for singleton storage
+ * This module provides the main interface for the GhostSol SDK, supporting
+ * both privacy mode (true transaction privacy using confidential transfers)
+ * and efficiency mode (cost optimization using ZK compression).
  * 
- * Exports:
- * - init() - Initialize SDK singleton
- * - getAddress() - Get user's address
- * - getBalance() - Get compressed balance
- * - compress() - Compress SOL (shield)
- * - transfer() - Private transfer
- * - decompress() - Decompress SOL (unshield)
- * - fundDevnet() - Devnet airdrop helper
+ * The SDK automatically selects the appropriate implementation based on the
+ * configuration provided during initialization.
  */
 
-import { PublicKey } from '@solana/web3.js';
+import { Connection, Keypair, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { 
+  GhostSolConfig, 
+  ExtendedWalletAdapter, 
+  TransferResult, 
+  CompressedBalance,
+  PrivacySdkConfig 
+} from './core/types';
 import { GhostSol } from './core/ghost-sol';
-import { GhostSolConfig, WalletAdapter } from './core/types';
+import { GhostSolPrivacy } from './privacy/ghost-sol-privacy';
+import { normalizeWallet, getWalletAddress } from './core/wallet';
+import { GhostSolError, ValidationError } from './core/errors';
 
-// Global singleton instance storage
-declare global {
-  var __ghostSol__: GhostSol | undefined;
-}
+// Global SDK instance
+let sdkInstance: GhostSol | null = null;
+let privacyInstance: GhostSolPrivacy | null = null;
+let currentMode: 'privacy' | 'efficiency' = 'efficiency'; // Default to efficiency for backward compatibility
 
 /**
- * Initialize the GhostSol SDK singleton with configuration
+ * Initialize the GhostSol SDK with dual-mode support
  * 
- * This function creates and configures the global GhostSol instance.
- * Must be called before using any other SDK functions.
- * 
- * @param config - Configuration options for SDK initialization
+ * @param config - Configuration object supporting both privacy and efficiency modes
  * @returns Promise that resolves when initialization is complete
- * @throws Error if initialization fails
+ * @throws GhostSolError if initialization fails
+ * 
+ * @example
+ * // Efficiency mode (default - ZK Compression for cost savings)
+ * await init({
+ *   wallet: keypair,
+ *   cluster: 'devnet'
+ * });
+ * 
+ * @example
+ * // Privacy mode (true transaction privacy with confidential transfers)
+ * await init({
+ *   wallet: keypair,
+ *   cluster: 'devnet',
+ *   privacy: {
+ *     mode: 'privacy',
+ *     enableViewingKeys: true
+ *   }
+ * });
  */
 export async function init(config: GhostSolConfig): Promise<void> {
-  const instance = new GhostSol();
-  await instance.init(config);
-  globalThis.__ghostSol__ = instance;
-}
-
-/**
- * Get the user's public key as a base58 string
- * 
- * @returns Base58 encoded public key
- * @throws Error if SDK is not initialized
- */
-export function getAddress(): string {
-  const instance = _getInstance();
-  return instance.getAddress();
-}
-
-/**
- * Get the compressed token balance for the user
- * 
- * @returns Promise resolving to balance in lamports
- * @throws Error if balance query fails
- */
-export async function getBalance(): Promise<number> {
-  const instance = _getInstance();
-  return await instance.getBalance();
-}
-
-/**
- * Compress SOL from regular account to compressed token account
- * 
- * This is the "shield" operation that moves SOL from the user's regular
- * account into a compressed token account for private transfers.
- * 
- * @param amount - Amount to compress in lamports
- * @returns Promise resolving to transaction signature
- * @throws Error if compression fails
- */
-export async function compress(amount: number): Promise<string> {
-  const instance = _getInstance();
-  return await instance.compress(amount);
-}
-
-/**
- * Transfer compressed tokens to another address
- * 
- * This performs a private transfer between compressed accounts using
- * ZK proofs to maintain privacy.
- * 
- * @param to - Recipient's public key as base58 string
- * @param amount - Amount to transfer in lamports
- * @returns Promise resolving to transaction signature
- * @throws Error if transfer fails
- */
-export async function transfer(to: string, amount: number): Promise<string> {
-  const instance = _getInstance();
-  return await instance.transfer(to, amount);
-}
-
-/**
- * Decompress SOL from compressed account back to regular account
- * 
- * This is the "unshield" operation that moves SOL from a compressed
- * token account back to a regular Solana account.
- * 
- * @param amount - Amount to decompress in lamports
- * @param to - Optional destination address (defaults to user's address)
- * @returns Promise resolving to transaction signature
- * @throws Error if decompression fails
- */
-export async function decompress(amount: number, to?: string): Promise<string> {
-  const instance = _getInstance();
-  
-  // Handle PublicKey conversion for string addresses
-  let destination: string | undefined = to;
-  if (to) {
-    try {
-      // Validate that the address is a valid PublicKey
-      new PublicKey(to);
-      destination = to;
-    } catch {
-      throw new Error(`Invalid destination address: ${to}`);
+  try {
+    // Determine mode based on configuration
+    const mode = config.privacy?.mode || 'efficiency';
+    currentMode = mode;
+    
+    if (mode === 'privacy') {
+      // Initialize privacy mode
+      if (!config.privacy) {
+        throw new ValidationError('Privacy configuration required for privacy mode');
+      }
+      
+      privacyInstance = new GhostSolPrivacy();
+      
+      // Create connection
+      const connection = new Connection(
+        config.rpcUrl || (config.cluster === 'mainnet-beta' 
+          ? 'https://api.mainnet-beta.solana.com' 
+          : 'https://api.devnet.solana.com'),
+        config.commitment || 'confirmed'
+      );
+      
+      // Normalize wallet
+      const wallet = normalizeWallet(config.wallet);
+      
+      await privacyInstance.init(connection, wallet, config.privacy);
+      
+    } else {
+      // Initialize efficiency mode (existing functionality)
+      sdkInstance = new GhostSol();
+      await sdkInstance.init(config);
     }
-  }
-  
-  return await instance.decompress(amount, destination);
-}
-
-/**
- * Request devnet airdrop for testing purposes
- * 
- * This method requests SOL from the devnet faucet for testing.
- * Only works on devnet and may be rate limited.
- * 
- * @param amount - Amount to request in SOL (default: 2 SOL)
- * @returns Promise resolving to transaction signature
- * @throws Error if airdrop fails
- */
-export async function fundDevnet(amount: number = 2): Promise<string> {
-  const instance = _getInstance();
-  const lamports = Math.floor(amount * 1e9); // Convert SOL to lamports
-  return await instance.fundDevnet(lamports);
-}
-
-/**
- * Get detailed balance information including compressed and regular SOL
- * 
- * @returns Promise resolving to detailed balance information
- * @throws Error if balance query fails
- */
-export async function getDetailedBalance() {
-  const instance = _getInstance();
-  return await instance.getDetailedBalance();
-}
-
-/**
- * Force refresh balance cache for current user
- * 
- * This method invalidates the cached balance and fetches fresh data
- * from the blockchain. Useful after transactions to get updated balances.
- * 
- * @returns Promise resolving when refresh is complete
- * @throws Error if refresh fails
- */
-export async function refreshBalance(): Promise<void> {
-  const instance = _getInstance();
-  return await instance.refreshBalance();
-}
-
-/**
- * Check if the SDK is properly initialized
- * 
- * @returns True if SDK is initialized and ready to use
- */
-export function isInitialized(): boolean {
-  return globalThis.__ghostSol__?.isInitialized() ?? false;
-}
-
-/**
- * Get the singleton GhostSol instance
- * 
- * @returns GhostSol instance
- * @throws Error if SDK is not initialized
- */
-function _getInstance(): GhostSol {
-  const instance = globalThis.__ghostSol__;
-  if (!instance || !instance.isInitialized()) {
-    throw new Error(
-      'GhostSol SDK is not initialized. Call init() first with your wallet configuration.'
+    
+  } catch (error) {
+    throw new GhostSolError(
+      `Failed to initialize GhostSol SDK in ${mode} mode: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      'INITIALIZATION_ERROR',
+      error instanceof Error ? error : undefined
     );
   }
-  return instance;
 }
 
-// Re-export types for convenience
-export type { GhostSolConfig, WalletAdapter, TransferResult, CompressedBalance } from './core/types';
+/**
+ * Get the current wallet address
+ * Works in both privacy and efficiency modes
+ * 
+ * @returns Base58 encoded wallet address
+ * @throws GhostSolError if SDK not initialized
+ */
+export function getAddress(): string {
+  _assertInitialized();
+  
+  if (currentMode === 'privacy') {
+    // In privacy mode, this returns the wallet address (not necessarily linked to transactions)
+    return (privacyInstance as any).wallet.publicKey.toBase58();
+  } else {
+    return sdkInstance!.getAddress();
+  }
+}
+
+/**
+ * Get balance information
+ * Returns different data based on mode:
+ * - Privacy mode: Returns encrypted balance (use decryptBalance to get actual amount)
+ * - Efficiency mode: Returns compressed balance information
+ */
+export async function getBalance(): Promise<CompressedBalance | any> {
+  _assertInitialized();
+  
+  if (currentMode === 'privacy') {
+    // Return encrypted balance information
+    return await privacyInstance!.getEncryptedBalance();
+  } else {
+    return await sdkInstance!.getBalance();
+  }
+}
+
+/**
+ * Deposit/Shield operation
+ * - Privacy mode: Creates encrypted deposit with true privacy
+ * - Efficiency mode: Compresses tokens for cost efficiency
+ */
+export async function deposit(amount: number): Promise<string> {
+  _assertInitialized();
+  
+  if (currentMode === 'privacy') {
+    return await privacyInstance!.encryptedDeposit(amount * LAMPORTS_PER_SOL);
+  } else {
+    // Map to existing compress function for backward compatibility
+    return await sdkInstance!.compress(amount);
+  }
+}
+
+/**
+ * Transfer operation  
+ * - Privacy mode: Performs private transfer with unlinkability
+ * - Efficiency mode: Performs compressed transfer (visible but cheap)
+ */
+export async function transfer(recipientAddress: string, amount: number): Promise<TransferResult | any> {
+  _assertInitialized();
+  
+  if (currentMode === 'privacy') {
+    return await privacyInstance!.privateTransfer(recipientAddress, amount * LAMPORTS_PER_SOL);
+  } else {
+    return await sdkInstance!.transfer(recipientAddress, amount);
+  }
+}
+
+/**
+ * Withdraw/Unshield operation
+ * - Privacy mode: Encrypted withdrawal maintaining privacy
+ * - Efficiency mode: Decompresses tokens to regular form
+ */
+export async function withdraw(amount: number, destination?: PublicKey): Promise<string> {
+  _assertInitialized();
+  
+  if (currentMode === 'privacy') {
+    return await privacyInstance!.encryptedWithdraw(amount * LAMPORTS_PER_SOL, destination);
+  } else {
+    // Map to existing decompress function for backward compatibility
+    return await sdkInstance!.decompress(amount);
+  }
+}
+
+// Privacy-specific functions (only available in privacy mode)
+
+/**
+ * Decrypt balance (privacy mode only)
+ * Decrypts the encrypted balance to get the actual amount
+ * 
+ * @param viewingKey - Optional viewing key for auditor access
+ * @returns Decrypted balance in SOL
+ * @throws GhostSolError if not in privacy mode
+ */
+export async function decryptBalance(viewingKey?: any): Promise<number> {
+  _assertPrivacyMode();
+  
+  const balanceInLamports = await privacyInstance!.decryptBalance(viewingKey);
+  return balanceInLamports / LAMPORTS_PER_SOL;
+}
+
+/**
+ * Generate viewing key for compliance (privacy mode only)
+ * Creates a viewing key that allows authorized parties to decrypt transactions
+ * 
+ * @returns Generated viewing key
+ * @throws GhostSolError if not in privacy mode or viewing keys not enabled
+ */
+export async function generateViewingKey(): Promise<any> {
+  _assertPrivacyMode();
+  
+  return await privacyInstance!.generateViewingKey();
+}
+
+/**
+ * Create confidential account (privacy mode only)
+ * Creates a new confidential token account for private operations
+ * 
+ * @param mint - Optional mint address (creates new mint if not provided)
+ * @returns Confidential account address
+ */
+export async function createConfidentialAccount(mint?: PublicKey): Promise<PublicKey> {
+  _assertPrivacyMode();
+  
+  return await privacyInstance!.createConfidentialAccount(mint);
+}
+
+// Backward compatibility functions (efficiency mode)
+
+/**
+ * Compress tokens (efficiency mode - backward compatibility)
+ * @deprecated Use deposit() for unified interface
+ */
+export async function compress(amount: number): Promise<string> {
+  return await deposit(amount);
+}
+
+/**
+ * Decompress tokens (efficiency mode - backward compatibility)  
+ * @deprecated Use withdraw() for unified interface
+ */
+export async function decompress(amount: number): Promise<string> {
+  return await withdraw(amount);
+}
+
+// Existing efficiency-only functions for backward compatibility
+
+/**
+ * Fund devnet account (efficiency mode only)
+ * Only available in efficiency mode for testing
+ */
+export async function fundDevnet(lamports?: number): Promise<string> {
+  if (currentMode === 'privacy') {
+    throw new GhostSolError(
+      'Devnet funding not available in privacy mode. Fund the account manually.',
+      'PRIVACY_MODE_ERROR'
+    );
+  }
+  
+  _assertEfficiencyMode();
+  return await sdkInstance!.fundDevnet(lamports);
+}
+
+/**
+ * Get detailed balance information (efficiency mode only)
+ */
+export async function getDetailedBalance(): Promise<any> {
+  _assertEfficiencyMode();
+  return await sdkInstance!.getDetailedBalance();
+}
+
+/**
+ * Check if SDK is initialized
+ */
+export function isInitialized(): boolean {
+  return (currentMode === 'privacy' && privacyInstance !== null) || 
+         (currentMode === 'efficiency' && sdkInstance !== null);
+}
+
+/**
+ * Get current SDK mode
+ */
+export function getCurrentMode(): 'privacy' | 'efficiency' {
+  return currentMode;
+}
+
+/**
+ * Get current SDK instance (for advanced usage)
+ * Returns appropriate instance based on current mode
+ */
+export function getSdkInstance(): GhostSol | GhostSolPrivacy {
+  _assertInitialized();
+  
+  if (currentMode === 'privacy') {
+    return privacyInstance!;
+  } else {
+    return sdkInstance!;
+  }
+}
+
+// Private helper functions
+
+function _assertInitialized(): void {
+  if (!isInitialized()) {
+    throw new GhostSolError(
+      'GhostSol SDK not initialized. Call init() first.',
+      'NOT_INITIALIZED_ERROR'
+    );
+  }
+}
+
+function _assertPrivacyMode(): void {
+  _assertInitialized();
+  
+  if (currentMode !== 'privacy') {
+    throw new GhostSolError(
+      'This function is only available in privacy mode. Initialize with privacy: { mode: "privacy" }',
+      'PRIVACY_MODE_ERROR'  
+    );
+  }
+}
+
+function _assertEfficiencyMode(): void {
+  _assertInitialized();
+  
+  if (currentMode !== 'efficiency') {
+    throw new GhostSolError(
+      'This function is only available in efficiency mode.',
+      'EFFICIENCY_MODE_ERROR'
+    );
+  }
+}
+
+// Export types for external usage
+export type { 
+  GhostSolConfig, 
+  WalletAdapter, 
+  ExtendedWalletAdapter, 
+  TransferResult, 
+  CompressedBalance,
+  PrivacySdkConfig
+} from './core/types';
+
+// Export privacy-specific types
+export type {
+  PrivacyConfig,
+  EncryptedBalance,
+  EncryptedAmount, 
+  ViewingKey,
+  PrivateTransferResult
+} from './privacy/types';
+
+// Export error classes
 export { 
   GhostSolError, 
+  ValidationError, 
   CompressionError, 
   TransferError, 
-  DecompressionError,
-  ValidationError,
-  RpcError 
+  DecompressionError 
 } from './core/errors';
-export { GhostSol } from './core/ghost-sol';
+
+export {
+  PrivacyError,
+  EncryptionError,
+  ProofGenerationError,
+  ViewingKeyError
+} from './privacy/errors';

@@ -13,7 +13,7 @@
 
 import { Keypair, PublicKey, Transaction } from '@solana/web3.js';
 import * as anchor from '@coral-xyz/anchor';
-import { WalletAdapter } from './types';
+import { WalletAdapter, ExtendedWalletAdapter } from './types';
 
 /**
  * Normalize different wallet types into a unified WalletAdapter interface
@@ -24,22 +24,23 @@ import { WalletAdapter } from './types';
  * - Undefined (CLI environments - uses anchor.utils.wallet())
  * 
  * @param wallet - The wallet to normalize (Keypair, wallet adapter, or undefined)
- * @returns Normalized WalletAdapter interface
+ * @returns Normalized ExtendedWalletAdapter interface with raw Keypair access
  * @throws GhostSolError if wallet type is unsupported or invalid
  */
-export function normalizeWallet(wallet?: Keypair | WalletAdapter): WalletAdapter {
+export function normalizeWallet(wallet?: Keypair | WalletAdapter): ExtendedWalletAdapter {
   // Handle undefined wallet (CLI environment)
   if (!wallet) {
-    try {
-      // Use anchor's wallet utility for CLI environments
-      const anchorWallet = anchor.utils.wallet();
-      return {
-        publicKey: anchorWallet.publicKey,
-        signTransaction: anchorWallet.signTransaction.bind(anchorWallet),
-        signAllTransactions: anchorWallet.signAllTransactions.bind(anchorWallet),
-        signMessage: anchorWallet.signMessage?.bind(anchorWallet)
-      };
-    } catch (error) {
+  try {
+    // Use anchor's wallet utility for CLI environments
+    const anchorWallet = anchor.utils.wallet();
+    return {
+      publicKey: anchorWallet.publicKey,
+      rawKeypair: undefined, // CLI wallet doesn't expose raw Keypair either
+      signTransaction: anchorWallet.signTransaction.bind(anchorWallet),
+      signAllTransactions: anchorWallet.signAllTransactions.bind(anchorWallet),
+      signMessage: anchorWallet.signMessage?.bind(anchorWallet)
+    };
+  } catch (error) {
       throw new Error(
         'No wallet provided and unable to access CLI wallet. ' +
         'Please provide a Keypair or wallet adapter.'
@@ -51,6 +52,7 @@ export function normalizeWallet(wallet?: Keypair | WalletAdapter): WalletAdapter
   if (wallet instanceof Keypair) {
     return {
       publicKey: wallet.publicKey,
+      rawKeypair: wallet, // Store the raw Keypair for stateless.js operations
       signTransaction: async <T extends Transaction>(tx: T): Promise<T> => {
         tx.sign(wallet);
         return tx;
@@ -88,7 +90,12 @@ export function normalizeWallet(wallet?: Keypair | WalletAdapter): WalletAdapter
       throw new Error('Wallet adapter missing signAllTransactions method');
     }
 
-    return wallet as WalletAdapter;
+    // For wallet adapters from browser, we don't have access to the raw Keypair
+    // This is a limitation when using browser wallets with stateless.js
+    return {
+      ...wallet,
+      rawKeypair: undefined // Browser wallets don't expose private keys
+    } as ExtendedWalletAdapter;
   }
 
   throw new Error(
@@ -127,5 +134,24 @@ export function getWalletAddress(wallet?: WalletAdapter): string {
   }
   
   return wallet!.publicKey.toBase58();
+}
+
+/**
+ * Extract raw Keypair from ExtendedWalletAdapter for stateless.js operations
+ * 
+ * @param wallet - The extended wallet adapter
+ * @returns Raw Keypair if available
+ * @throws Error if no raw Keypair is available (e.g., browser wallets)
+ */
+export function extractRawKeypair(wallet: ExtendedWalletAdapter): Keypair {
+  if (!wallet.rawKeypair) {
+    throw new Error(
+      'Raw Keypair not available. This operation requires a Node.js Keypair, ' +
+      'but a browser wallet adapter was provided. Browser wallets do not expose ' +
+      'private keys for security reasons.'
+    );
+  }
+  
+  return wallet.rawKeypair;
 }
 

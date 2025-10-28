@@ -30,6 +30,8 @@ import { Keypair } from '@solana/web3.js';
 
 // Generate a test keypair
 const keypair = Keypair.generate();
+console.log('🔑 Generated address:', keypair.publicKey.toBase58());
+console.log('💰 Fund this address at: https://faucet.solana.com');
 
 // Initialize the SDK
 await init({

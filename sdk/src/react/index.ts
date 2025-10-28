@@ -16,7 +16,7 @@ export { GhostSolProvider } from './GhostSolProvider';
 export { useGhostSol } from './useGhostSol';
 
 // Re-export types for convenience
-export type { WalletAdapter, GhostSolConfig, TransferResult, CompressedBalance } from '../core/types';
+export type { WalletAdapter, ExtendedWalletAdapter, GhostSolConfig, TransferResult, CompressedBalance } from '../core/types';
 export { 
   GhostSolError, 
   CompressionError, 

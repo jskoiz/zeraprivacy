@@ -13,7 +13,7 @@
  * - CompressedBalance - Balance information for compressed accounts
  */
 
-import { PublicKey, Connection } from '@solana/web3.js';
+import { PublicKey, Connection, Keypair } from '@solana/web3.js';
 import { Rpc } from '@lightprotocol/stateless.js';
 
 /**
@@ -21,13 +21,27 @@ import { Rpc } from '@lightprotocol/stateless.js';
  */
 export interface GhostSolConfig {
   /** Wallet instance - can be Keypair, wallet adapter, or undefined for CLI */
-  wallet?: WalletAdapter;
+  wallet?: Keypair | WalletAdapter;
   /** Solana RPC endpoint URL */
   rpcUrl?: string;
   /** Solana cluster - devnet or mainnet-beta */
   cluster?: 'devnet' | 'mainnet-beta';
   /** Commitment level for transaction confirmation */
   commitment?: 'processed' | 'confirmed' | 'finalized';
+  /** Privacy configuration - enables true privacy vs efficiency mode */
+  privacy?: PrivacySdkConfig;
+}
+
+/**
+ * Privacy configuration for the SDK
+ */
+export interface PrivacySdkConfig {
+  /** Mode selection: 'privacy' for true privacy, 'efficiency' for ZK Compression */
+  mode: 'privacy' | 'efficiency';
+  /** Enable viewing keys for compliance/auditing */
+  enableViewingKeys?: boolean;
+  /** Enable audit mode for regulatory compliance */
+  auditMode?: boolean;
 }
 
 /**
@@ -45,6 +59,16 @@ export interface WalletAdapter {
   signAllTransactions<T>(txs: T[]): Promise<T[]>;
   /** Optional: Sign message method for additional functionality */
   signMessage?(message: Uint8Array): Promise<Uint8Array>;
+}
+
+/**
+ * Extended wallet interface that includes raw Keypair for signing operations
+ * This is used internally to bridge between our WalletAdapter interface and
+ * the raw Keypair required by @lightprotocol/stateless.js
+ */
+export interface ExtendedWalletAdapter extends WalletAdapter {
+  /** Original raw Keypair for signing operations (if available) */
+  rawKeypair?: Keypair;
 }
 
 /**

@@ -23,7 +23,9 @@
   "scripts": {
     "build": "tsup src/index.ts src/react/index.ts --dts --format cjs,esm",
     "dev": "tsup src/index.ts src/react/index.ts --dts --format cjs,esm --watch",
-    "test": "tsx test/basic.ts"
+    "test": "tsx test/basic.ts",
+    "test:privacy": "tsx test/privacy-prototype.ts",
+    "test:dual-mode": "tsx test/dual-mode-test.ts"
   },
   "dependencies": {
     "@lightprotocol/stateless.js": "^0.21.0",

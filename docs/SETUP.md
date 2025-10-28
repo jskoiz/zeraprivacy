@@ -115,6 +115,32 @@ await ghostSol.init({
 });
 ```
 
+### 4. RPC Configuration
+
+The GhostSol SDK uses Helius RPC endpoints for ZK Compression operations. These endpoints are pre-configured and include API keys for reliable access.
+
+#### Supported Networks
+
+- **Devnet**: `https://devnet.helius-rpc.com/?api-key=7bab09d6-6b6b-4e9a-b0dd-7b2c7f6977bf`
+- **Mainnet**: `https://mainnet.helius-rpc.com/?api-key=7bab09d6-6b6b-4e9a-b0dd-7b2c7f6977bf`
+
+#### Custom RPC Configuration
+
+If you need to use a different RPC endpoint, you can specify it during initialization:
+
+```typescript
+import { GhostSol } from 'ghost-sol';
+
+const ghostSol = new GhostSol();
+await ghostSol.init({
+  wallet: yourWallet,
+  cluster: 'devnet',
+  rpcUrl: 'https://your-custom-rpc-endpoint.com'
+});
+```
+
+**Note**: ZK Compression operations require RPC endpoints that support Light Protocol methods. Standard Solana RPC endpoints may not work for compression operations.
+
 ## Demo Application Setup
 
 ### 1. Start the Development Server
@@ -197,6 +223,16 @@ npx tsx test/e2e-test.ts
    # Open http://localhost:3000 and test wallet connection
    ```
 
+## Funding Test Accounts
+
+**Important**: The SDK no longer relies on problematic devnet airdrop. Instead:
+
+1. **Run tests** to get a generated address
+2. **Fund manually** using https://faucet.solana.com
+3. **Reuse funded accounts** for multiple test runs
+
+See [FUNDING.md](FUNDING.md) for detailed funding strategies.
+
 ## Troubleshooting
 
 ### Common Issues
@@ -220,21 +256,28 @@ npm run build
 - Try refreshing the page and reconnecting
 - Check browser console for error messages
 
-#### 3. Airdrop Failures
+#### 3. Operation Failures (Expected)
 
-**Problem**: "429 Too Many Requests" error
+**Problem**: Compression/transfer operations fail
 **Solutions**:
-- This is common on devnet - try again later
-- Use manual funding from https://faucet.solana.com
-- Check if you've reached daily airdrop limits
+- This is expected with unfunded accounts
+- Fund the test address using https://faucet.solana.com
+- The SDK signing logic works correctly (as shown in error details)
 
 #### 4. ZK Compression Failures
 
+**Problem**: "failed to get recent blockhash" or "TypeError: Failed to fetch" errors
+**Solutions**:
+- The SDK now uses Helius RPC endpoints which should resolve connectivity issues
+- Check your internet connection and firewall settings
+- Verify that the Helius RPC endpoints are accessible from your network
+- If issues persist, try using a different RPC endpoint in your configuration
+
 **Problem**: "Method not found" errors
-**Explanation**: This is expected behavior
-- Standard Solana devnet RPC does not support ZK Compression methods
-- A dedicated Light Protocol RPC endpoint is required for full functionality
-- The demo showcases UI and SDK integration, not actual ZK operations
+**Explanation**: This may occur if:
+- The RPC endpoint doesn't support ZK Compression methods
+- The Light Protocol library version is incompatible
+- Network connectivity issues prevent proper RPC communication
 
 #### 5. Dependency Issues
 

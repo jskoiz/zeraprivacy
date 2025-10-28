@@ -17,7 +17,7 @@ import { Connection, PublicKey, Transaction, LAMPORTS_PER_SOL } from '@solana/we
 import { createRpc } from '@lightprotocol/stateless.js';
 import { 
   GhostSolConfig, 
-  WalletAdapter, 
+  ExtendedWalletAdapter, 
   TransferResult, 
   CompressedBalance,
   NETWORKS 
@@ -49,7 +49,7 @@ import {
 export class GhostSol {
   private connection!: Connection;
   private rpc!: any; // ZK Compression RPC instance
-  private wallet!: WalletAdapter;
+  private wallet!: ExtendedWalletAdapter;
   private relayer!: Relayer;
   private balanceCache!: BalanceCache;
   private initialized: boolean = false;
@@ -314,29 +314,50 @@ export class GhostSol {
    * 
    * This method requests SOL from the devnet faucet for testing.
    * Only works on devnet and may be rate limited.
+   * Includes timeout to prevent hanging on rate-limited requests.
    * 
    * @param lamports - Amount to request in lamports (default: 2 SOL)
    * @returns Promise resolving to transaction signature
-   * @throws GhostSolError if airdrop fails
+   * @throws GhostSolError if airdrop fails or times out
    */
   async fundDevnet(lamports: number = 2 * LAMPORTS_PER_SOL): Promise<string> {
     this._assertInitialized();
     
     try {
-      const signature = await this.connection.requestAirdrop(
-        this.wallet.publicKey,
-        lamports
-      );
+      // Create timeout promise (30 seconds)
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Airdrop request timed out after 30 seconds. This is likely due to rate limiting on devnet.'));
+        }, 30000);
+      });
       
-      // Wait for confirmation
-      await this.connection.confirmTransaction(signature, 'confirmed');
+      // Race between airdrop request and timeout
+      const signature = await Promise.race([
+        this.connection.requestAirdrop(
+          this.wallet.publicKey,
+          lamports
+        ),
+        timeoutPromise
+      ]);
+      
+      // Wait for confirmation with shorter timeout
+      const confirmTimeout = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Transaction confirmation timed out'));
+        }, 15000);
+      });
+      
+      await Promise.race([
+        this.connection.confirmTransaction(signature, 'confirmed'),
+        confirmTimeout
+      ]);
       
       return signature;
       
     } catch (error) {
       throw new GhostSolError(
         `Failed to request devnet airdrop: ${error instanceof Error ? error.message : 'Unknown error'}. ` +
-        'This may be due to rate limiting or network issues.',
+        'This may be due to rate limiting or network issues. Try using https://faucet.solana.com manually.',
         'AIRDROP_ERROR',
         error instanceof Error ? error : undefined
       );

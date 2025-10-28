@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "echo \"No tests defined for Next.js demo\" && exit 0"
   },
   "dependencies": {
     "@solana/wallet-adapter-base": "^0.9.27",
