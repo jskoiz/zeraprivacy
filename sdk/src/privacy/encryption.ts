@@ -13,6 +13,7 @@ import { EncryptedAmount, ZKProof } from './types';
 import { EncryptionError, ProofGenerationError } from './errors';
 import { ed25519, RistrettoPoint, hashToRistretto255 } from '@noble/curves/ed25519';
 import { sha256 } from '@noble/hashes/sha256';
+import { RangeProofBuilder } from './zk-circuits';
 
 /**
  * Encryption utilities class for confidential transfers
@@ -45,8 +46,12 @@ export class EncryptionUtils {
         randomness
       );
 
-      // Pragmatic range proof placeholder for devnet demo
-      const rangeProof = await this._generateRangeProof(amount, randomness);
+      // Pragmatic range proof placeholder via stub contract
+      const rangeProof = await this._generateRangeProof(
+        amount,
+        randomness,
+        pedersenCommitment
+      );
 
       return {
         ciphertext,
@@ -200,15 +205,11 @@ export class EncryptionUtils {
 
   private async _generateRangeProof(
     amount: bigint,
-    randomness: Uint8Array
+    randomness: Uint8Array,
+    commitment: Uint8Array
   ): Promise<Uint8Array> {
-    // TODO: Implement actual range proof generation
-    // This proves that 0 <= amount < 2^64 without revealing the amount
-    
-    // Placeholder implementation
-    const rangeProof = new Uint8Array(128);
-    crypto.getRandomValues(rangeProof);
-    return rangeProof;
+    const builder = new RangeProofBuilder();
+    return builder.buildProofBytes({ amount, commitment, randomness, maxBoundBits: 64 });
   }
 
   private async _performElGamalDecryption(
@@ -254,11 +255,8 @@ export class EncryptionUtils {
     rangeProof: Uint8Array,
     commitment: Uint8Array
   ): Promise<boolean> {
-    // Placeholder: hash-based binding check
-    const h = sha256.create();
-    h.update(commitment);
-    const digest = h.digest();
-    return rangeProof.length >= 32 && rangeProof[0] === digest[0];
+    const builder = new RangeProofBuilder();
+    return builder.verifyProofBytes(rangeProof, commitment);
   }
 
   private async _generateCircuitProof(

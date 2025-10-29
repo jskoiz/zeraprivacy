@@ -18,6 +18,7 @@ export { GhostSolPrivacy } from './ghost-sol-privacy';
 export { ConfidentialTransferManager } from './confidential-transfer';
 export { EncryptionUtils } from './encryption';
 export { ViewingKeyManager } from './viewing-keys';
+export * as ZkCircuits from './zk-circuits';
 
 // Type exports
 export type {
