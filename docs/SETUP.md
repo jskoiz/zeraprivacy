@@ -41,52 +41,77 @@ cd ghost-sol
 ### 2. Install Dependencies
 
 ```bash
-# Install root dependencies
-npm install
-
-# Install SDK dependencies
-cd sdk
-npm install
-
-# Install demo dependencies
-cd ../examples/nextjs-demo
+# Install all workspace dependencies (root + sdk + examples)
 npm install
 ```
 
-### 3. Build the SDK
+### 3. Build the SDK and workspaces
 
 ```bash
-cd sdk
-npm run build
+npm run build --workspaces
 ```
 
 ## SDK Setup
 
-### 1. Basic SDK Usage
+### 1. Quick Start (Node)
 
-Create a new file `test-sdk.js`:
+Create a new file `quick-start.ts`:
 
 ```javascript
-const { GhostSol } = require('./sdk/dist/index.js');
-const { Keypair } = require('@solana/web3.js');
+import { init, getAddress, getBalance, deposit, transfer, withdraw } from './sdk/dist/index.js';
+import { Keypair } from '@solana/web3.js';
 
-async function testSDK() {
-  // Initialize SDK
-  const ghostSol = new GhostSol();
-  await ghostSol.init({
-    wallet: Keypair.generate(),
-    cluster: 'devnet'
-  });
+async function main() {
+  await init({ wallet: Keypair.generate(), cluster: 'devnet' });
 
-  // Test basic functionality
-  console.log('Address:', ghostSol.getAddress());
-  console.log('Balance:', await ghostSol.getBalance());
+  console.log('Address:', getAddress());
+  console.log('Balance:', await getBalance());
+
+  // Optional operations depending on funding and RPC support
+  // await deposit(0.1);
+  // await transfer('<RECIPIENT_BASE58>', 0.01);
+  // await withdraw(0.01);
 }
-
-testSDK().catch(console.error);
+main().catch(console.error);
 ```
 
-### 2. Run SDK Tests
+### 2. Privacy Mode Quick Start (Node)
+
+Create `privacy-quick-start.ts`:
+
+```typescript
+import { init, getAddress, getBalance, deposit, transfer, withdraw, decryptBalance, generateViewingKey } from './sdk/dist/index.js';
+import { Keypair } from '@solana/web3.js';
+
+async function main() {
+  await init({
+    wallet: Keypair.generate(),
+    cluster: 'devnet',
+    privacy: { mode: 'privacy', enableViewingKeys: true },
+  });
+
+  console.log('Address:', getAddress());
+  const enc = await getBalance();
+  console.log('Encrypted balance:', enc);
+  console.log('Decrypted SOL:', await decryptBalance());
+
+  // Note: Proof generation is stubbed; private ops may throw ProofGenerationError in early builds
+  // await deposit(0.1);
+  // await transfer('<RECIPIENT_BASE58>', 0.01);
+  // await withdraw(0.01);
+
+  const vk = await generateViewingKey();
+  console.log('Viewing Key:', vk);
+}
+
+main().catch(console.error);
+```
+
+Limitations on devnet:
+- Devnet airdrop helper is not available in privacy mode; fund manually (see `docs/FUNDING.md`).
+- Proof generation/verification paths are not finalized and may throw `ProofGenerationError`.
+
+### 3. Run SDK Tests
 
 ```bash
 cd sdk
@@ -98,7 +123,7 @@ npx tsx test/sdk-functionality-test.ts
 npx tsx test/e2e-test.ts
 ```
 
-### 3. SDK Configuration
+### 4. SDK Configuration
 
 The SDK can be configured with various options:
 
@@ -170,7 +195,17 @@ Navigate to `http://localhost:3000` in your browser.
 
 ## Testing
 
-### 1. SDK Functionality Tests
+### 1. Workspace Build and SDK Tests (recommended validation)
+
+Run the following from the repository root to validate the setup:
+
+```bash
+npm install
+npm run build --workspaces
+npm test --workspace sdk
+```
+
+### 2. SDK Functionality Tests
 
 These tests verify the SDK works correctly without requiring actual blockchain operations:
 
@@ -193,7 +228,7 @@ npx tsx test/sdk-functionality-test.ts
 ✅ Decompression correctly fails before initialization
 ```
 
-### 2. End-to-End Tests
+### 3. End-to-End Tests
 
 These tests attempt full blockchain operations (may fail due to RPC limitations):
 
@@ -209,7 +244,7 @@ npx tsx test/e2e-test.ts
 ⚠️ Insufficient balance for testing. Please fund the account manually
 ```
 
-### 3. Demo Application Tests
+### 4. Demo Application Tests
 
 1. **Build Test**: Verify the application builds correctly
    ```bash
@@ -231,7 +266,7 @@ npx tsx test/e2e-test.ts
 2. **Fund manually** using https://faucet.solana.com
 3. **Reuse funded accounts** for multiple test runs
 
-See [FUNDING.md](FUNDING.md) for detailed funding strategies.
+See [FUNDING.md](FUNDING.md) for detailed funding strategies. In privacy mode, programmatic airdrop is not supported by the SDK entry points.
 
 ## Troubleshooting
 

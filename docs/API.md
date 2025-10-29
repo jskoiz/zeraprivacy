@@ -84,6 +84,12 @@ await withdraw(0.05);                // encrypted withdrawal
 const vk = await generateViewingKey(); // share with auditor
 ```
 
+Notes for privacy mode:
+- Devnet funding helper is disabled. Use a faucet or manual transfer; see `docs/FUNDING.md`.
+- Proof generation and verification are currently stubbed and will throw `ProofGenerationError`.
+- `getBalance()` returns an `EncryptedBalance`; call `decryptBalance()` to obtain a number in SOL.
+- Viewing keys are optional; enable via `privacy.enableViewingKeys`. Some viewing key operations may be no-ops in early builds.
+
 ---
 
 ## Top-level SDK (index) APIs
@@ -118,6 +124,10 @@ Config: `GhostSolConfig` (see Types)
 - `decryptBalance(viewingKey?: ViewingKey): Promise<number>`: Decrypts encrypted balance, returns SOL.
 - `generateViewingKey(): Promise<ViewingKey>`: Create viewing key for compliance/auditors.
 - `createConfidentialAccount(mint?: PublicKey): Promise<PublicKey>`: Ensure confidential account exists.
+
+Caveats:
+- These functions are only available when initialized with `privacy: { mode: 'privacy' }`.
+- Proof-related internals are not yet finalized; expect `ProofGenerationError` until implemented.
 
 ### Backward compatible helpers
 - `compress(amount: number): Promise<string>`: Deprecated alias of `deposit` (efficiency path).
@@ -174,6 +184,7 @@ Key methods:
 
 Notes:
 - Proof generation methods are stubs and will throw `ProofGenerationError` until implemented.
+- Devnet airdrop is not supported in privacy mode; fund accounts manually when testing on devnet.
 
 ---
 
