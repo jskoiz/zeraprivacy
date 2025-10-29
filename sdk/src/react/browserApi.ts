@@ -41,3 +41,42 @@ export async function fundDevnet(lamports?: number): Promise<string> {
   if (!sdk) throw new Error('SDK not initialized');
   return sdk.fundDevnet(lamports);
 }
+
+// ----------------------
+// Privacy-mode lightweight stubs
+// These provide non-crashing placeholders suitable for browser demos
+// without importing heavy privacy crypto modules.
+
+export type EncryptedBalanceLite = {
+  exists: boolean;
+  lastUpdated: number;
+  ciphertextPreview: string; // hex preview for UI only
+};
+
+export async function getEncryptedBalance(): Promise<EncryptedBalanceLite> {
+  // Return a harmless placeholder to demonstrate UI without heavy crypto
+  return {
+    exists: true,
+    lastUpdated: Date.now(),
+    ciphertextPreview: '0xenc...balance',
+  };
+}
+
+export async function generateViewingKey(): Promise<string> {
+  // Generate a demo-friendly pseudo viewing key string
+  const rand = Math.random().toString(36).slice(2, 10);
+  return `vk_demo_${rand}`;
+}
+
+export async function privacyDeposit(_amount: number): Promise<never> {
+  // Prototype-only in this browser demo
+  throw new Error('Privacy deposit not available in browser demo');
+}
+
+export async function privacyTransfer(_to: string, _amount: number): Promise<never> {
+  throw new Error('Privacy transfer not available in browser demo');
+}
+
+export async function privacyWithdraw(_amount: number): Promise<never> {
+  throw new Error('Privacy withdraw not available in browser demo');
+}

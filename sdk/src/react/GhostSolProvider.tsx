@@ -30,6 +30,14 @@ interface GhostSolState {
   address: string | null;
   /** Compressed balance in lamports */
   balance: number | null;
+  /** Encrypted balance preview for privacy mode */
+  encryptedBalance: {
+    exists: boolean;
+    lastUpdated: number;
+    ciphertextPreview: string;
+  } | null;
+  /** Most recently generated viewing key (demo string) */
+  viewingKey: string | null;
   /** Loading state */
   loading: boolean;
   /** Error message */
@@ -50,6 +58,16 @@ interface GhostSolActions {
   fundDevnet: (amount?: number) => Promise<string>;
   /** Refresh balance and address */
   refresh: () => Promise<void>;
+  /** Privacy: deposit into encrypted pool */
+  privacyDeposit: (amount: number) => Promise<string>;
+  /** Privacy: transfer privately */
+  privacyTransfer: (to: string, amount: number) => Promise<string>;
+  /** Privacy: withdraw from encrypted pool */
+  privacyWithdraw: (amount: number) => Promise<string>;
+  /** Privacy: generate a viewing key (demo) */
+  generateViewingKey: () => Promise<string>;
+  /** Refresh encrypted balance */
+  refreshPrivacy: () => Promise<void>;
 }
 
 /**
@@ -95,6 +113,8 @@ export function GhostSolProvider({
   const [state, setState] = useState<GhostSolState>({
     address: null,
     balance: null,
+    encryptedBalance: null,
+    viewingKey: null,
     loading: false,
     error: null,
   });
@@ -109,6 +129,8 @@ export function GhostSolProvider({
         setState({
           address: null,
           balance: null,
+          encryptedBalance: null,
+          viewingKey: null,
           loading: false,
           error: null,
         });
@@ -126,13 +148,16 @@ export function GhostSolProvider({
         });
 
         // Get initial address and balance
-        const { getAddress, getBalance } = await loadSdk();
+        const { getAddress, getBalance, getEncryptedBalance } = await loadSdk();
         const address = getAddress();
         const balance = await getBalance();
+        const encryptedBalance = await getEncryptedBalance();
 
         setState({
           address,
           balance,
+          encryptedBalance,
+          viewingKey: null,
           loading: false,
           error: null,
         });
@@ -159,20 +184,38 @@ export function GhostSolProvider({
     }
 
     try {
-      const { getAddress, getBalance } = await loadSdk();
+      const { getAddress, getBalance, getEncryptedBalance } = await loadSdk();
       const address = getAddress();
       const balance = await getBalance();
+      const encryptedBalance = await getEncryptedBalance();
 
       setState(prev => ({
         ...prev,
         address,
         balance,
+        encryptedBalance,
         error: null,
       }));
     } catch (error) {
       setState(prev => ({
         ...prev,
         error: error instanceof Error ? error.message : 'Failed to refresh data',
+      }));
+    }
+  };
+
+  /**
+   * Refresh encrypted balance only
+   */
+  const refreshPrivacy = async (): Promise<void> => {
+    try {
+      const { getEncryptedBalance } = await loadSdk();
+      const encryptedBalance = await getEncryptedBalance();
+      setState(prev => ({ ...prev, encryptedBalance }));
+    } catch (error) {
+      setState(prev => ({
+        ...prev,
+        error: error instanceof Error ? error.message : 'Failed to refresh encrypted balance',
       }));
     }
   };
@@ -232,6 +275,78 @@ export function GhostSolProvider({
   };
 
   /**
+   * Privacy: deposit into encrypted pool
+   */
+  const handlePrivacyDeposit = async (amount: number): Promise<string> => {
+    try {
+      const { privacyDeposit } = await loadSdk();
+      const signature = await privacyDeposit(amount);
+      await refreshPrivacy();
+      return signature;
+    } catch (error) {
+      setState(prev => ({
+        ...prev,
+        error: error instanceof Error ? error.message : 'Privacy deposit failed',
+      }));
+      throw error;
+    }
+  };
+
+  /**
+   * Privacy: private transfer
+   */
+  const handlePrivacyTransfer = async (to: string, amount: number): Promise<string> => {
+    try {
+      const { privacyTransfer } = await loadSdk();
+      const signature = await privacyTransfer(to, amount);
+      await refreshPrivacy();
+      return signature;
+    } catch (error) {
+      setState(prev => ({
+        ...prev,
+        error: error instanceof Error ? error.message : 'Privacy transfer failed',
+      }));
+      throw error;
+    }
+  };
+
+  /**
+   * Privacy: withdraw from encrypted pool
+   */
+  const handlePrivacyWithdraw = async (amount: number): Promise<string> => {
+    try {
+      const { privacyWithdraw } = await loadSdk();
+      const signature = await privacyWithdraw(amount);
+      await refreshPrivacy();
+      return signature;
+    } catch (error) {
+      setState(prev => ({
+        ...prev,
+        error: error instanceof Error ? error.message : 'Privacy withdraw failed',
+      }));
+      throw error;
+    }
+  };
+
+  /**
+   * Privacy: generate a viewing key (demo string)
+   */
+  const handleGenerateViewingKey = async (): Promise<string> => {
+    try {
+      const { generateViewingKey } = await loadSdk();
+      const vk = await generateViewingKey();
+      setState(prev => ({ ...prev, viewingKey: vk }));
+      return vk;
+    } catch (error) {
+      setState(prev => ({
+        ...prev,
+        error: error instanceof Error ? error.message : 'Failed to generate viewing key',
+      }));
+      throw error;
+    }
+  };
+
+  /**
    * Request devnet airdrop with automatic state refresh
    */
   const handleFundDevnet = async (amount: number = 2): Promise<string> => {
@@ -257,6 +372,11 @@ export function GhostSolProvider({
     decompress: handleDecompress,
     fundDevnet: handleFundDevnet,
     refresh,
+    privacyDeposit: handlePrivacyDeposit,
+    privacyTransfer: handlePrivacyTransfer,
+    privacyWithdraw: handlePrivacyWithdraw,
+    generateViewingKey: handleGenerateViewingKey,
+    refreshPrivacy,
   };
 
   return (

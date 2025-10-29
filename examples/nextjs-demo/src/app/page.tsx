@@ -30,6 +30,12 @@ function DashboardContent() {
     transfer, 
     decompress, 
     fundDevnet,
+    encryptedBalance,
+    viewingKey,
+    privacyDeposit,
+    privacyTransfer,
+    privacyWithdraw,
+    generateViewingKey,
     loading, 
     error,
     refresh
@@ -41,6 +47,8 @@ function DashboardContent() {
   const [compressAmount, setCompressAmount] = useState('0.01')
   const [decompressAmount, setDecompressAmount] = useState('0.01')
   const [isProcessing, setIsProcessing] = useState(false)
+  const [privacyAmount, setPrivacyAmount] = useState('0.01')
+  const [privacyRecipient, setPrivacyRecipient] = useState('')
 
   const addToLog = (log: Omit<TransactionLog, 'id'>) => {
     setTransactionLog(prev => [{
@@ -153,6 +161,51 @@ function DashboardContent() {
     }
   }
 
+  const handlePrivacyDeposit = async () => {
+    if (!privacyDeposit) return
+    setIsProcessing(true)
+    try {
+      const amount = parseFloat(privacyAmount) * 1e9
+      const sig = await privacyDeposit(amount)
+      addToLog({ type: 'compress', amount: parseFloat(privacyAmount), signature: sig, timestamp: new Date() })
+      await refresh()
+    } catch (e) {
+      alert((e as Error).message)
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  const handlePrivacyTransfer = async () => {
+    if (!privacyTransfer || !privacyRecipient) return
+    setIsProcessing(true)
+    try {
+      const amount = parseFloat(privacyAmount) * 1e9
+      const sig = await privacyTransfer(privacyRecipient, amount)
+      addToLog({ type: 'transfer', amount: parseFloat(privacyAmount), signature: sig, timestamp: new Date(), recipient: privacyRecipient })
+      await refresh()
+    } catch (e) {
+      alert((e as Error).message)
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  const handlePrivacyWithdraw = async () => {
+    if (!privacyWithdraw) return
+    setIsProcessing(true)
+    try {
+      const amount = parseFloat(privacyAmount) * 1e9
+      const sig = await privacyWithdraw(amount)
+      addToLog({ type: 'decompress', amount: parseFloat(privacyAmount), signature: sig, timestamp: new Date() })
+      await refresh()
+    } catch (e) {
+      alert((e as Error).message)
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
   const formatBalance = (lamports: number | null) => {
     if (lamports === null) return '0.0000'
     return (lamports / 1e9).toFixed(4)
@@ -202,9 +255,16 @@ function DashboardContent() {
               <p className="text-2xl font-bold">{formatBalance(balance)} SOL</p>
             </div>
             <div className="bg-gray-700 rounded-lg p-4">
-              <h3 className="text-sm font-medium text-gray-300 mb-2">Compressed SOL</h3>
-              <p className="text-2xl font-bold">
-                {loading ? 'Loading...' : `${formatBalance(0)} SOL`}
+              <h3 className="text-sm font-medium text-gray-300 mb-2">Encrypted Balance (Privacy)</h3>
+              <p className="text-sm text-gray-300">
+                {encryptedBalance ? (
+                  <>
+                    <span className="font-mono">{encryptedBalance.ciphertextPreview}</span>
+                    <span className="ml-2 text-gray-400">(updated {new Date(encryptedBalance.lastUpdated).toLocaleTimeString()})</span>
+                  </>
+                ) : (
+                  '—'
+                )}
               </p>
             </div>
           </div>
@@ -353,6 +413,70 @@ function DashboardContent() {
               ))}
             </div>
           )}
+        </div>
+
+        {/* Privacy Prototype */}
+        <div className="bg-gray-800 rounded-lg p-6 mt-8">
+          <h2 className="text-xl font-semibold mb-2">Privacy Mode (Prototype)</h2>
+          <p className="text-sm text-gray-400 mb-4">Encrypted balance preview and viewing key generation for demo.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">Amount (SOL)</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0.01"
+                value={privacyAmount}
+                onChange={(e) => setPrivacyAmount(e.target.value)}
+                className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none"
+                placeholder="Amount (SOL)"
+              />
+              <label className="block text-sm text-gray-400 mt-3 mb-1">Recipient (for private transfer)</label>
+              <input
+                type="text"
+                value={privacyRecipient}
+                onChange={(e) => setPrivacyRecipient(e.target.value)}
+                className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none"
+                placeholder="Recipient address"
+              />
+              <div className="flex flex-wrap gap-3 mt-4">
+                <button onClick={handlePrivacyDeposit} disabled={isProcessing || loading} className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg">
+                  Privacy Deposit
+                </button>
+                <button onClick={handlePrivacyTransfer} disabled={isProcessing || loading || !privacyRecipient} className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg">
+                  Privacy Transfer
+                </button>
+                <button onClick={handlePrivacyWithdraw} disabled={isProcessing || loading} className="bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg">
+                  Privacy Withdraw
+                </button>
+              </div>
+            </div>
+            <div>
+              <div className="mb-3">
+                <button
+                  onClick={async () => {
+                    if (!generateViewingKey) return
+                    try {
+                      await generateViewingKey()
+                    } catch (e) {
+                      alert((e as Error).message)
+                    }
+                  }}
+                  disabled={isProcessing || loading}
+                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg"
+                >
+                  Generate Viewing Key
+                </button>
+              </div>
+              <div className="text-sm text-gray-300">
+                <div className="text-gray-400 mb-1">Viewing Key:</div>
+                <div className="font-mono break-all bg-gray-700 rounded p-2 min-h-[40px]">{viewingKey || '—'}</div>
+              </div>
+            </div>
+          </div>
+          <div className="mt-3 text-xs text-yellow-300 bg-yellow-900 border border-yellow-700 rounded p-2">
+            Note: Privacy operations are stubbed in this demo and will show a clear error if invoked.
+          </div>
         </div>
 
         {/* Error Display */}
