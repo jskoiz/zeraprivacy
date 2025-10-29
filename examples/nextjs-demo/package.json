@@ -16,8 +16,8 @@
     "@solana/wallet-adapter-wallets": "^0.19.37",
     "@solana/web3.js": "^1.98.4",
     "ghost-sol": "file:../../sdk",
-    "@noble/curves": "^1.4.0",
-    "@noble/hashes": "^1.4.0",
+    "@noble/curves": "1.4.0",
+    "@noble/hashes": "1.4.0",
     "next": "16.0.0",
     "react": "19.2.0",
     "react-dom": "19.2.0"
