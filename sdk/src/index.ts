@@ -196,6 +196,16 @@ export async function decryptBalance(viewingKey?: any): Promise<number> {
 }
 
 /**
+ * Decrypt transaction amount (privacy mode only)
+ * Accepts optional viewing key for auditor access
+ */
+export async function decryptAmount(ciphertext: Uint8Array, viewingKey?: any): Promise<number> {
+  _assertPrivacyMode();
+  const amountInLamports = await privacyInstance!.decryptAmount(ciphertext, viewingKey);
+  return amountInLamports / LAMPORTS_PER_SOL;
+}
+
+/**
  * Generate viewing key for compliance (privacy mode only)
  * Creates a viewing key that allows authorized parties to decrypt transactions
  * 
@@ -206,6 +216,18 @@ export async function generateViewingKey(): Promise<any> {
   _assertPrivacyMode();
   
   return await privacyInstance!.generateViewingKey();
+}
+
+/** List viewing keys (privacy mode only) */
+export async function listViewingKeys(): Promise<any[]> {
+  _assertPrivacyMode();
+  return await (privacyInstance as any).listViewingKeys();
+}
+
+/** Revoke a viewing key (privacy mode only) */
+export async function revokeViewingKey(vkPublicKey: PublicKey): Promise<void> {
+  _assertPrivacyMode();
+  return await (privacyInstance as any).revokeViewingKey(vkPublicKey);
 }
 
 /**

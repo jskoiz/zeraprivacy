@@ -355,6 +355,51 @@ export class GhostSolPrivacy {
   }
 
   /**
+   * Decrypt an encrypted amount (owner or viewing key holders)
+   */
+  async decryptAmount(ciphertext: Uint8Array, viewingKey?: ViewingKey): Promise<number> {
+    this._assertInitialized();
+
+    try {
+      if (viewingKey && this.viewingKeyManager) {
+        return await this.viewingKeyManager.decryptAmount(ciphertext, viewingKey);
+      }
+
+      const amount = await this.encryptionUtils.decryptAmount(ciphertext, this.wallet.rawKeypair!);
+      return Number(amount);
+    } catch (error) {
+      throw new EncryptionError(
+        `Failed to decrypt amount: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error : undefined
+      );
+    }
+  }
+
+  /**
+   * List viewing keys for current confidential account
+   */
+  async listViewingKeys(): Promise<ViewingKey[]> {
+    this._assertInitialized();
+    if (!this.config.enableViewingKeys || !this.viewingKeyManager) {
+      throw new PrivacyError('Viewing keys not enabled');
+    }
+    this._assertConfidentialAccount();
+    return await this.viewingKeyManager.getViewingKeys(this.confidentialAccount!.address);
+  }
+
+  /**
+   * Revoke a previously issued viewing key
+   */
+  async revokeViewingKey(vkPublicKey: PublicKey): Promise<void> {
+    this._assertInitialized();
+    if (!this.config.enableViewingKeys || !this.viewingKeyManager) {
+      throw new PrivacyError('Viewing keys not enabled');
+    }
+    this._assertConfidentialAccount();
+    await this.viewingKeyManager.revokeViewingKey(this.confidentialAccount!.address, vkPublicKey);
+  }
+
+  /**
    * Generate viewing key for compliance/auditing
    */
   async generateViewingKey(): Promise<ViewingKey> {

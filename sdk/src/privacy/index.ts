@@ -17,7 +17,9 @@
 export { GhostSolPrivacy } from './ghost-sol-privacy';
 export { ConfidentialTransferManager } from './confidential-transfer';
 export { EncryptionUtils } from './encryption';
-export { ViewingKeyManager } from './viewing-keys';
+export { ViewingKeyManager, InMemoryViewingKeyStore } from './viewing-keys';
+export type { ViewingKeyStore } from './viewing-keys';
+export * as SelectiveDisclosure from './selective-disclosure';
 
 // Type exports
 export type {
