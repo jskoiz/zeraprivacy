@@ -20,7 +20,7 @@ import {
   EncryptionError 
 } from './errors';
 import { ExtendedWalletAdapter } from '../core/types';
-import { ristretto255 } from '@noble/curves/ristretto255';
+import { ristretto255 } from '@noble/curves/ed25519';
 import { sha256 } from '@noble/hashes/sha256';
 
 /**
