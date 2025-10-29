@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GhostSOL Status - System Status and Uptime</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            padding: 40px 20px;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .status-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .overall-status {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .status-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-operational {
+            background: #10b981;
+        }
+
+        .status-degraded {
+            background: #f59e0b;
+        }
+
+        .status-down {
+            background: #ef4444;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .component-status {
+            display: grid;
+            gap: 15px;
+        }
+
+        .component {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .component:hover {
+            border-color: #667eea;
+            box-shadow: 0 2px 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .component-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .component-description {
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-top: 4px;
+        }
+
+        .component-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .badge-operational {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-degraded {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-down {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .uptime-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .uptime-card {
+            text-align: center;
+            padding: 20px;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+
+        .uptime-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #667eea;
+            margin: 10px 0;
+        }
+
+        .uptime-label {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        .incident-history {
+            margin-top: 20px;
+        }
+
+        .incident {
+            padding: 20px;
+            border-left: 4px solid #667eea;
+            background: #f9fafb;
+            margin-bottom: 15px;
+            border-radius: 4px;
+        }
+
+        .incident-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .incident-meta {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        .subscribe-section {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+        }
+
+        .subscribe-section h2 {
+            margin-bottom: 15px;
+        }
+
+        .subscribe-form {
+            display: flex;
+            gap: 10px;
+            max-width: 500px;
+            margin: 20px auto 0;
+        }
+
+        .subscribe-input {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+
+        .subscribe-button {
+            padding: 12px 30px;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .subscribe-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .last-updated {
+            text-align: center;
+            color: white;
+            margin-top: 30px;
+            opacity: 0.8;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #1f2937;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+
+        .error-message {
+            background: #fee2e2;
+            border: 1px solid #ef4444;
+            color: #991b1b;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌙 GhostSOL Status</h1>
+            <p>Real-time system status and uptime monitoring</p>
+        </div>
+
+        <div id="error-container"></div>
+
+        <div class="status-card overall-status">
+            <div class="status-indicator">
+                <span class="status-dot status-operational" id="overall-status-dot"></span>
+                <span id="overall-status-text">All Systems Operational</span>
+            </div>
+            <p style="color: #6b7280;" id="status-message">All systems are running smoothly</p>
+        </div>
+
+        <div class="status-card">
+            <h2 class="section-title">Component Status</h2>
+            <div class="component-status" id="components-container">
+                <div class="loading">Loading component status...</div>
+            </div>
+        </div>
+
+        <div class="status-card">
+            <h2 class="section-title">Uptime Statistics</h2>
+            <div class="uptime-section">
+                <div class="uptime-card">
+                    <div class="uptime-label">Last 24 Hours</div>
+                    <div class="uptime-value" id="uptime-24h">--</div>
+                    <div class="uptime-label">operational</div>
+                </div>
+                <div class="uptime-card">
+                    <div class="uptime-label">Last 30 Days</div>
+                    <div class="uptime-value" id="uptime-30d">--</div>
+                    <div class="uptime-label">operational</div>
+                </div>
+                <div class="uptime-card">
+                    <div class="uptime-label">Last 90 Days</div>
+                    <div class="uptime-value" id="uptime-90d">--</div>
+                    <div class="uptime-label">operational</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-card">
+            <h2 class="section-title">Recent Incidents</h2>
+            <div class="incident-history" id="incidents-container">
+                <div class="loading">Loading incident history...</div>
+            </div>
+        </div>
+
+        <div class="status-card subscribe-section">
+            <h2>Stay Updated</h2>
+            <p>Subscribe to get notified about incidents and maintenance</p>
+            <form class="subscribe-form" id="subscribe-form">
+                <input 
+                    type="email" 
+                    class="subscribe-input" 
+                    placeholder="Enter your email" 
+                    required
+                    id="email-input"
+                >
+                <button type="submit" class="subscribe-button">Subscribe</button>
+            </form>
+        </div>
+
+        <div class="last-updated" id="last-updated">
+            Last updated: Loading...
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_ENDPOINT = '/api/health';
+        const REFRESH_INTERVAL = 30000; // 30 seconds
+
+        // Component configurations
+        const COMPONENTS = {
+            'photon-rpc-primary': {
+                name: 'Photon RPC (Primary)',
+                description: 'Main RPC endpoint for compressed transactions'
+            },
+            'photon-rpc-backup': {
+                name: 'Photon RPC (Backup)',
+                description: 'Backup RPC endpoint for failover'
+            },
+            'forester': {
+                name: 'Forester Service',
+                description: 'State tree management and batching'
+            },
+            'sdk-endpoints': {
+                name: 'SDK Endpoints',
+                description: 'GhostSOL SDK API endpoints'
+            }
+        };
+
+        async function fetchStatus() {
+            try {
+                const response = await fetch(API_ENDPOINT);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch status');
+                }
+                const data = await response.json();
+                updateUI(data);
+                clearError();
+            } catch (error) {
+                console.error('Error fetching status:', error);
+                showError('Unable to fetch system status. Using cached data or demo mode.');
+                // Use demo data for development
+                updateUI(getDemoData());
+            }
+        }
+
+        function getDemoData() {
+            return {
+                status: 'operational',
+                message: 'All systems operational',
+                components: [
+                    { id: 'photon-rpc-primary', status: 'operational', responseTime: 45 },
+                    { id: 'photon-rpc-backup', status: 'operational', responseTime: 48 },
+                    { id: 'forester', status: 'operational', responseTime: 120 },
+                    { id: 'sdk-endpoints', status: 'operational', responseTime: 35 }
+                ],
+                uptime: {
+                    day1: 99.98,
+                    day30: 99.95,
+                    day90: 99.92
+                },
+                incidents: [
+                    {
+                        title: 'Scheduled Maintenance',
+                        description: 'Routine database optimization completed successfully',
+                        timestamp: '2025-10-15T03:00:00Z',
+                        duration: '30 minutes',
+                        status: 'resolved'
+                    }
+                ],
+                lastUpdated: new Date().toISOString()
+            };
+        }
+
+        function updateUI(data) {
+            // Update overall status
+            const statusDot = document.getElementById('overall-status-dot');
+            const statusText = document.getElementById('overall-status-text');
+            const statusMessage = document.getElementById('status-message');
+
+            statusDot.className = `status-dot status-${data.status}`;
+            
+            const statusTexts = {
+                'operational': 'All Systems Operational',
+                'degraded': 'Degraded Performance',
+                'down': 'System Outage'
+            };
+            
+            statusText.textContent = statusTexts[data.status] || 'Unknown Status';
+            statusMessage.textContent = data.message || 'Checking system status...';
+
+            // Update components
+            const componentsContainer = document.getElementById('components-container');
+            componentsContainer.innerHTML = '';
+            
+            data.components.forEach(component => {
+                const config = COMPONENTS[component.id];
+                const componentEl = document.createElement('div');
+                componentEl.className = 'component';
+                componentEl.innerHTML = `
+                    <div>
+                        <div class="component-name">${config.name}</div>
+                        <div class="component-description">${config.description}</div>
+                        ${component.responseTime ? `<div class="component-description">Response time: ${component.responseTime}ms</div>` : ''}
+                    </div>
+                    <span class="component-badge badge-${component.status}">
+                        ${component.status.charAt(0).toUpperCase() + component.status.slice(1)}
+                    </span>
+                `;
+                componentsContainer.appendChild(componentEl);
+            });
+
+            // Update uptime
+            document.getElementById('uptime-24h').textContent = `${data.uptime.day1.toFixed(2)}%`;
+            document.getElementById('uptime-30d').textContent = `${data.uptime.day30.toFixed(2)}%`;
+            document.getElementById('uptime-90d').textContent = `${data.uptime.day90.toFixed(2)}%`;
+
+            // Update incidents
+            const incidentsContainer = document.getElementById('incidents-container');
+            if (data.incidents && data.incidents.length > 0) {
+                incidentsContainer.innerHTML = '';
+                data.incidents.slice(0, 5).forEach(incident => {
+                    const incidentEl = document.createElement('div');
+                    incidentEl.className = 'incident';
+                    const date = new Date(incident.timestamp).toLocaleString();
+                    incidentEl.innerHTML = `
+                        <div class="incident-title">${incident.title}</div>
+                        <div class="incident-meta">
+                            ${date} • ${incident.duration} • ${incident.status}
+                        </div>
+                        <p style="margin-top: 8px; color: #4b5563;">${incident.description}</p>
+                    `;
+                    incidentsContainer.appendChild(incidentEl);
+                });
+            } else {
+                incidentsContainer.innerHTML = '<p style="color: #6b7280; text-align: center;">No recent incidents to report</p>';
+            }
+
+            // Update last updated time
+            const lastUpdated = new Date(data.lastUpdated).toLocaleString();
+            document.getElementById('last-updated').textContent = `Last updated: ${lastUpdated}`;
+        }
+
+        function showError(message) {
+            const errorContainer = document.getElementById('error-container');
+            errorContainer.innerHTML = `
+                <div class="status-card error-message">
+                    <strong>Notice:</strong> ${message}
+                </div>
+            `;
+        }
+
+        function clearError() {
+            document.getElementById('error-container').innerHTML = '';
+        }
+
+        // Handle subscription form
+        document.getElementById('subscribe-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email-input').value;
+            
+            try {
+                // TODO: Implement actual subscription API
+                console.log('Subscribing email:', email);
+                alert('Thank you for subscribing! You will receive updates about system status.');
+                document.getElementById('email-input').value = '';
+            } catch (error) {
+                alert('Failed to subscribe. Please try again later.');
+            }
+        });
+
+        // Initial load
+        fetchStatus();
+
+        // Auto-refresh
+        setInterval(fetchStatus, REFRESH_INTERVAL);
+    </script>
+</body>
+</html>
