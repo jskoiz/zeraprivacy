@@ -139,6 +139,7 @@ export class ConfidentialTransferManager {
    * @param proof - Zero-knowledge proof of validity
    * @returns Transaction signature
    */
+  // Backwards-compatible: original method name
   async deposit(
     account: PublicKey,
     encryptedAmount: EncryptedAmount,
@@ -173,6 +174,17 @@ export class ConfidentialTransferManager {
   }
 
   /**
+   * Encrypted deposit (alias for deposit)
+   */
+  async encryptedDeposit(
+    account: PublicKey,
+    encryptedAmount: EncryptedAmount,
+    proof: ZKProof
+  ): Promise<string> {
+    return this.deposit(account, encryptedAmount, proof);
+  }
+
+  /**
    * Transfer encrypted funds between confidential accounts
    * 
    * @param fromAccount - Source account
@@ -181,6 +193,7 @@ export class ConfidentialTransferManager {
    * @param proof - Zero-knowledge proof of validity
    * @returns Transaction signature
    */
+  // Backwards-compatible: original method name
   async transfer(
     fromAccount: PublicKey,
     toRecipient: PublicKey,
@@ -217,6 +230,18 @@ export class ConfidentialTransferManager {
   }
 
   /**
+   * Private transfer (alias for transfer)
+   */
+  async privateTransfer(
+    fromAccount: PublicKey,
+    toRecipient: PublicKey,
+    encryptedAmount: EncryptedAmount,
+    proof: ZKProof
+  ): Promise<string> {
+    return this.transfer(fromAccount, toRecipient, encryptedAmount, proof);
+  }
+
+  /**
    * Withdraw funds from confidential account to regular account
    * 
    * @param account - Source confidential account
@@ -225,6 +250,7 @@ export class ConfidentialTransferManager {
    * @param proof - Zero-knowledge proof of validity
    * @returns Transaction signature
    */
+  // Backwards-compatible: original method name
   async withdraw(
     account: PublicKey,
     destination: PublicKey,
@@ -258,6 +284,18 @@ export class ConfidentialTransferManager {
         error instanceof Error ? error : undefined
       );
     }
+  }
+
+  /**
+   * Encrypted withdraw (alias for withdraw)
+   */
+  async encryptedWithdraw(
+    account: PublicKey,
+    destination: PublicKey,
+    encryptedAmount: EncryptedAmount,
+    proof: ZKProof
+  ): Promise<string> {
+    return this.withdraw(account, destination, encryptedAmount, proof);
   }
 
   /**

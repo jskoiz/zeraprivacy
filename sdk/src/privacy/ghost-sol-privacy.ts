@@ -199,7 +199,7 @@ export class GhostSolPrivacy {
       const zkProof = await this._generateDepositProof(amount, encryptedAmount);
       
       // Execute confidential deposit
-      const signature = await this.confidentialTransferManager.deposit(
+      const signature = await this.confidentialTransferManager.encryptedDeposit(
         this.confidentialAccount!.address,
         encryptedAmount,
         zkProof
@@ -243,7 +243,7 @@ export class GhostSolPrivacy {
       );
       
       // Execute private transfer
-      const signature = await this.confidentialTransferManager.transfer(
+      const signature = await this.confidentialTransferManager.privateTransfer(
         this.confidentialAccount!.address,
         recipient,
         encryptedAmount,
@@ -285,7 +285,7 @@ export class GhostSolPrivacy {
       const zkProof = await this._generateWithdrawProof(amount, encryptedAmount);
       
       // Execute confidential withdrawal
-      const signature = await this.confidentialTransferManager.withdraw(
+      const signature = await this.confidentialTransferManager.encryptedWithdraw(
         this.confidentialAccount!.address,
         withdrawalDestination,
         encryptedAmount,
