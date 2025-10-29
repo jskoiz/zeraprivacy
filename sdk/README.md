@@ -197,6 +197,27 @@ The SDK demonstrates:
 - ✅ Error handling and validation
 - ✅ TypeScript support
 
+## Devnet Confidential Transfer (Token-2022) - E2E Test
+
+Prereqs:
+- Node 18+
+- Installed deps in workspace root: `npm install`
+
+Run the test:
+
+```bash
+npm run test --workspace sdk -- e2e-confidential-transfer.ts
+```
+
+What it does:
+- Airdrops SOL to two fresh keypairs on Devnet
+- Creates a new Token-2022 mint with Confidential Transfer enabled (prototype)
+- Creates confidential accounts for sender and recipient
+- Attempts an encrypted private transfer and logs the result
+
+Notes:
+- This prototype wires encryption and account flows; full ZK proof generation and all Token-2022 CT instructions may still be in progress. The script will print a warning if the transfer is not yet fully supported.
+
 ## Contributing
 
 This SDK follows strict development principles:

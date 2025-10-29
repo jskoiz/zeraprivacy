@@ -20,6 +20,8 @@ import {
   EncryptionError 
 } from './errors';
 import { ExtendedWalletAdapter } from '../core/types';
+import { ristretto255 } from '@noble/curves/ristretto255';
+import { sha256 } from '@noble/hashes/sha256';
 
 /**
  * Manager class for viewing keys and compliance features
@@ -272,24 +274,44 @@ export class ViewingKeyManager {
     privateKey: Uint8Array,
     recipientPublicKey: PublicKey
   ): Promise<Uint8Array> {
-    // TODO: Implement actual private key encryption
-    // This would encrypt the viewing key's private key using the account owner's public key
-    
-    // Placeholder implementation
-    const encrypted = new Uint8Array(64);
-    crypto.getRandomValues(encrypted);
-    return encrypted;
+    // ECIES-style: R = rG, S = r*PK, K = KDF(S), CT = AES-GCM_K(IV, privateKey)
+    const rBytes = new Uint8Array(32);
+    crypto.getRandomValues(rBytes);
+    const r = this._bytesToScalar(rBytes);
+
+    const recipientPoint = this._deriveRecipientPoint(recipientPublicKey);
+    const R = ristretto255.RistrettoPoint.BASE.multiply(r);
+    const S = recipientPoint.multiply(r);
+    const K = this._kdf(S.toRawBytes());
+
+    const iv = this._randomIv();
+    const sealed = await this._aesGcmSeal(K, iv, privateKey);
+
+    const out = new Uint8Array(32 + 12 + sealed.length);
+    out.set(R.toRawBytes(), 0);
+    out.set(iv, 32);
+    out.set(sealed, 44);
+    return out;
   }
 
   private async _decryptPrivateKey(
     encryptedPrivateKey: Uint8Array,
     ownerKeypair: Keypair
   ): Promise<Uint8Array> {
-    // TODO: Implement actual private key decryption
-    // This would decrypt the viewing key's private key using the account owner's private key
-    
-    // Placeholder implementation - return dummy key
-    return new Uint8Array(32);
+    if (encryptedPrivateKey.length < 32 + 12 + 16) {
+      throw new EncryptionError('Invalid encrypted viewing key');
+    }
+    const Rbytes = encryptedPrivateKey.slice(0, 32);
+    const iv = encryptedPrivateKey.slice(32, 44);
+    const sealed = encryptedPrivateKey.slice(44);
+
+    const R = ristretto255.RistrettoPoint.fromHex(Rbytes);
+    const skScalar = this._ed25519SkToScalar(ownerKeypair.secretKey);
+    const S = R.multiply(skScalar);
+    const K = this._kdf(S.toRawBytes());
+
+    const pt = await this._aesGcmOpen(K, iv, sealed);
+    return pt;
   }
 
   private async _decryptBalanceWithKey(
@@ -323,3 +345,70 @@ export class ViewingKeyManager {
     return `${accountAddress.toBase58()}_${viewingKeyPublicKey.toBase58()}`;
   }
 }
+
+// Helper methods for ECIES-like sealing
+export interface _VKHelpers {}
+
+export interface ViewingKeyManager {
+  _bytesToScalar(bytes: Uint8Array): bigint;
+  _deriveRecipientPoint(pk: PublicKey): ristretto255.RistrettoPoint;
+  _kdf(shared: Uint8Array): Uint8Array;
+  _randomIv(): Uint8Array;
+  _aesGcmSeal(key: Uint8Array, iv: Uint8Array, plaintext: Uint8Array): Promise<Uint8Array>;
+  _aesGcmOpen(key: Uint8Array, iv: Uint8Array, sealed: Uint8Array): Promise<Uint8Array>;
+  _ed25519SkToScalar(sk: Uint8Array): bigint;
+}
+
+ViewingKeyManager.prototype._bytesToScalar = function (bytes: Uint8Array): bigint {
+  const n = ristretto255.CURVE.n;
+  const x = BigInt('0x' + Buffer.from(bytes).toString('hex')) % n;
+  return x === 0n ? 1n : x;
+};
+
+ViewingKeyManager.prototype._deriveRecipientPoint = function (pk: PublicKey) {
+  const te = new TextEncoder();
+  const domain = te.encode('ghostsol/viewing-key/recipient');
+  const msg = new Uint8Array(domain.length + pk.toBytes().length);
+  msg.set(domain, 0);
+  msg.set(pk.toBytes(), domain.length);
+  return ristretto255.hashToCurve(msg);
+};
+
+ViewingKeyManager.prototype._kdf = function (shared: Uint8Array): Uint8Array {
+  const te = new TextEncoder();
+  const h = sha256.create();
+  h.update(te.encode('ghostsol/viewing-key/kdf'));
+  h.update(shared);
+  return new Uint8Array(h.digest());
+};
+
+ViewingKeyManager.prototype._randomIv = function (): Uint8Array {
+  const iv = new Uint8Array(12);
+  crypto.getRandomValues(iv);
+  return iv;
+};
+
+ViewingKeyManager.prototype._aesGcmSeal = async function (
+  keyBytes: Uint8Array,
+  iv: Uint8Array,
+  plaintext: Uint8Array
+): Promise<Uint8Array> {
+  const cryptoKey = await crypto.subtle.importKey('raw', keyBytes, { name: 'AES-GCM' }, false, ['encrypt']);
+  return new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, cryptoKey, plaintext));
+};
+
+ViewingKeyManager.prototype._aesGcmOpen = async function (
+  keyBytes: Uint8Array,
+  iv: Uint8Array,
+  sealed: Uint8Array
+): Promise<Uint8Array> {
+  const cryptoKey = await crypto.subtle.importKey('raw', keyBytes, { name: 'AES-GCM' }, false, ['decrypt']);
+  return new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, cryptoKey, sealed));
+};
+
+ViewingKeyManager.prototype._ed25519SkToScalar = function (sk: Uint8Array): bigint {
+  const seed = sk.slice(0, 32);
+  const n = ristretto255.CURVE.n;
+  const x = BigInt('0x' + Buffer.from(seed).toString('hex')) % n;
+  return x === 0n ? 1n : x;
+};

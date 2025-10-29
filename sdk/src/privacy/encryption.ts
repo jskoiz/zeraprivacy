@@ -11,6 +11,8 @@
 import { PublicKey, Keypair } from '@solana/web3.js';
 import { EncryptedAmount, ZKProof } from './types';
 import { EncryptionError, ProofGenerationError } from './errors';
+import { ristretto255 } from '@noble/curves/ristretto255';
+import { sha256 } from '@noble/hashes/sha256';
 
 /**
  * Encryption utilities class for confidential transfers
@@ -33,30 +35,24 @@ export class EncryptionUtils {
     recipientPublicKey: PublicKey
   ): Promise<EncryptedAmount> {
     try {
-      // TODO: Implement actual Twisted ElGamal encryption
-      // This would use curve25519 operations to encrypt the amount
-      
-      // Generate randomness
+      // Generate encryption nonce/scalar
       const randomness = this._generateRandomness();
-      
-      // Create ElGamal ciphertext
-      const ciphertext = await this._createElGamalCiphertext(
+
+      // ECIES-style ElGamal over Ristretto255
+      const { ciphertext, pedersenCommitment } = await this._createElGamalWithCommitment(
         amount,
         recipientPublicKey,
         randomness
       );
-      
-      // Create Pedersen commitment
-      const commitment = await this._createPedersenCommitment(amount, randomness);
-      
-      // Generate range proof to prove amount is in valid range
+
+      // Pragmatic range proof placeholder for devnet demo
       const rangeProof = await this._generateRangeProof(amount, randomness);
-      
+
       return {
         ciphertext,
-        commitment,
+        commitment: pedersenCommitment,
         rangeProof,
-        randomness: randomness // Only kept by sender
+        randomness: randomness
       };
       
     } catch (error) {
@@ -76,14 +72,7 @@ export class EncryptionUtils {
    */
   async decryptAmount(ciphertext: Uint8Array, privateKey: Keypair): Promise<bigint> {
     try {
-      // TODO: Implement actual Twisted ElGamal decryption
-      // This would use the private key to decrypt the ElGamal ciphertext
-      
-      const decryptedAmount = await this._performElGamalDecryption(
-        ciphertext,
-        privateKey.secretKey
-      );
-      
+      const decryptedAmount = await this._performElGamalDecryption(ciphertext, privateKey.secretKey);
       return decryptedAmount;
       
     } catch (error) {
@@ -160,37 +149,53 @@ export class EncryptionUtils {
   // Private helper methods
 
   private _generateRandomness(): Uint8Array {
-    // Generate cryptographically secure randomness for ElGamal encryption
     const randomness = new Uint8Array(32);
     crypto.getRandomValues(randomness);
     return randomness;
   }
 
-  private async _createElGamalCiphertext(
+  private async _createElGamalWithCommitment(
     amount: bigint,
     recipientPublicKey: PublicKey,
-    randomness: Uint8Array
-  ): Promise<Uint8Array> {
-    // TODO: Implement actual Twisted ElGamal encryption
-    // This would perform the ElGamal encryption operation on curve25519
-    
-    // Placeholder implementation
-    const ciphertext = new Uint8Array(64);
-    crypto.getRandomValues(ciphertext);
-    return ciphertext;
+    randomnessBytes: Uint8Array
+  ): Promise<{ ciphertext: Uint8Array; pedersenCommitment: Uint8Array }> {
+    // Derive scalar r from randomness
+    const r = this._bytesToScalar(randomnessBytes);
+
+    // Derive recipient ElGamal public point from their Solana ed25519 key
+    const recipientPoint = this._deriveRecipientPoint(recipientPublicKey);
+
+    // Ephemeral key: R = r*G
+    const R = ristretto255.RistrettoPoint.BASE.multiply(r);
+
+    // Shared secret: S = r * recipientPoint
+    const S = recipientPoint.multiply(r);
+    const sharedKey = this._kdf(S.toRawBytes());
+
+    // Encrypt 64-bit amount using AES-GCM with sharedKey
+    const amountBytes = this._u64le(amount);
+    const iv = this._randomIv();
+    const sealed = await this._aesGcmSeal(sharedKey, iv, amountBytes);
+
+    // Ciphertext layout: R(32) || IV(12) || sealed (ct+tag)
+    const Rbytes = R.toRawBytes();
+    const ciphertext = new Uint8Array(Rbytes.length + iv.length + sealed.length);
+    ciphertext.set(Rbytes, 0);
+    ciphertext.set(iv, Rbytes.length);
+    ciphertext.set(sealed, Rbytes.length + iv.length);
+
+    // Pedersen commitment: C = H*amount + G2*r
+    const pedersenCommitment = this._pedersenCommit(amount, r);
+
+    return { ciphertext, pedersenCommitment };
   }
 
-  private async _createPedersenCommitment(
-    amount: bigint,
-    randomness: Uint8Array
-  ): Promise<Uint8Array> {
-    // TODO: Implement actual Pedersen commitment
-    // Commitment = g^amount * h^randomness
-    
-    // Placeholder implementation
-    const commitment = new Uint8Array(32);
-    crypto.getRandomValues(commitment);
-    return commitment;
+  private _pedersenCommit(amount: bigint, r: bigint): Uint8Array {
+    const H = this._generatorH();
+    const G2 = this._generatorG2();
+    const a = this._amountToScalar(amount);
+    const C = H.multiply(a).add(G2.multiply(r));
+    return C.toRawBytes();
   }
 
   private async _generateRangeProof(
@@ -210,27 +215,50 @@ export class EncryptionUtils {
     ciphertext: Uint8Array,
     privateKey: Uint8Array
   ): Promise<bigint> {
-    // TODO: Implement actual ElGamal decryption
-    // This would use the private key to decrypt the ciphertext
-    
-    // Placeholder implementation - return 0 for now
-    return BigInt(0);
+    // Parse R || IV || sealed
+    if (ciphertext.length < 32 + 12 + 16) {
+      throw new Error('Ciphertext too short');
+    }
+    const Rbytes = ciphertext.slice(0, 32);
+    const iv = ciphertext.slice(32, 44);
+    const sealed = ciphertext.slice(44);
+
+    const R = ristretto255.RistrettoPoint.fromHex(Rbytes);
+
+    // Derive private scalar from ed25519 secret key
+    const skScalar = this._ed25519SkToScalar(privateKey);
+
+    // Shared secret: S = sk * R
+    const S = R.multiply(skScalar);
+    const sharedKey = this._kdf(S.toRawBytes());
+
+    const amountBytes = await this._aesGcmOpen(sharedKey, iv, sealed);
+    if (amountBytes.length !== 8) throw new Error('Invalid plaintext length');
+    return this._u64FromLe(amountBytes);
   }
 
   private async _verifyPedersenCommitment(
     commitment: Uint8Array,
-    ciphertext: Uint8Array
+    _ciphertext: Uint8Array
   ): Promise<boolean> {
-    // TODO: Implement actual Pedersen commitment verification
-    return true; // Placeholder
+    // Structure-only check for demo: valid Ristretto encoding
+    try {
+      ristretto255.RistrettoPoint.fromHex(commitment);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   private async _verifyRangeProof(
     rangeProof: Uint8Array,
     commitment: Uint8Array
   ): Promise<boolean> {
-    // TODO: Implement actual range proof verification
-    return true; // Placeholder
+    // Placeholder: hash-based binding check
+    const h = sha256.create();
+    h.update(commitment);
+    const digest = h.digest();
+    return rangeProof.length >= 32 && rangeProof[0] === digest[0];
   }
 
   private async _generateCircuitProof(
@@ -261,3 +289,130 @@ export class EncryptionUtils {
     return BigInt(Math.floor(sol * 1e9));
   }
 }
+
+// Private helpers (non-exported)
+export interface Unused {}
+
+// Utility methods implemented as private methods on the class
+declare module './encryption' {}
+
+// Extend the class with helper methods
+export interface EncryptionUtils {
+  _bytesToScalar(bytes: Uint8Array): bigint;
+  _amountToScalar(amount: bigint): bigint;
+  _deriveRecipientPoint(pk: PublicKey): ristretto255.RistrettoPoint;
+  _generatorH(): ristretto255.RistrettoPoint;
+  _generatorG2(): ristretto255.RistrettoPoint;
+  _kdf(shared: Uint8Array): Uint8Array;
+  _randomIv(): Uint8Array;
+  _aesGcmSeal(key: Uint8Array, iv: Uint8Array, plaintext: Uint8Array): Promise<Uint8Array>;
+  _aesGcmOpen(key: Uint8Array, iv: Uint8Array, sealed: Uint8Array): Promise<Uint8Array>;
+  _u64le(n: bigint): Uint8Array;
+  _u64FromLe(bytes: Uint8Array): bigint;
+  _ed25519SkToScalar(sk: Uint8Array): bigint;
+}
+
+EncryptionUtils.prototype._bytesToScalar = function (bytes: Uint8Array): bigint {
+  const n = ristretto255.CURVE.n;
+  const x = BigInt('0x' + Buffer.from(bytes).toString('hex')) % n;
+  return x === 0n ? 1n : x;
+};
+
+EncryptionUtils.prototype._amountToScalar = function (amount: bigint): bigint {
+  const n = ristretto255.CURVE.n;
+  return amount % n;
+};
+
+EncryptionUtils.prototype._deriveRecipientPoint = function (pk: PublicKey) {
+  const te = new TextEncoder();
+  const domain = te.encode('ghostsol/elgamal/recipient');
+  const msg = new Uint8Array(domain.length + pk.toBytes().length);
+  msg.set(domain, 0);
+  msg.set(pk.toBytes(), domain.length);
+  return ristretto255.hashToCurve(msg);
+};
+
+EncryptionUtils.prototype._generatorH = function () {
+  const te = new TextEncoder();
+  return ristretto255.hashToCurve(te.encode('ghostsol/pedersen/H'));
+};
+
+EncryptionUtils.prototype._generatorG2 = function () {
+  const te = new TextEncoder();
+  return ristretto255.hashToCurve(te.encode('ghostsol/pedersen/G2'));
+};
+
+EncryptionUtils.prototype._kdf = function (shared: Uint8Array): Uint8Array {
+  const te = new TextEncoder();
+  const ctx = te.encode('ghostsol/elgamal/kdf');
+  const h = sha256.create();
+  h.update(ctx);
+  h.update(shared);
+  return new Uint8Array(h.digest());
+};
+
+EncryptionUtils.prototype._randomIv = function (): Uint8Array {
+  const iv = new Uint8Array(12);
+  crypto.getRandomValues(iv);
+  return iv;
+};
+
+EncryptionUtils.prototype._aesGcmSeal = async function (
+  keyBytes: Uint8Array,
+  iv: Uint8Array,
+  plaintext: Uint8Array
+): Promise<Uint8Array> {
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    keyBytes,
+    { name: 'AES-GCM' },
+    false,
+    ['encrypt']
+  );
+  const ct = new Uint8Array(
+    await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, cryptoKey, plaintext)
+  );
+  return ct;
+};
+
+EncryptionUtils.prototype._aesGcmOpen = async function (
+  keyBytes: Uint8Array,
+  iv: Uint8Array,
+  sealed: Uint8Array
+): Promise<Uint8Array> {
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    keyBytes,
+    { name: 'AES-GCM' },
+    false,
+    ['decrypt']
+  );
+  const pt = new Uint8Array(
+    await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, cryptoKey, sealed)
+  );
+  return pt;
+};
+
+EncryptionUtils.prototype._u64le = function (n: bigint): Uint8Array {
+  const b = new Uint8Array(8);
+  let x = n;
+  for (let i = 0; i < 8; i++) {
+    b[i] = Number(x & 0xffn);
+    x >>= 8n;
+  }
+  return b;
+};
+
+EncryptionUtils.prototype._u64FromLe = function (bytes: Uint8Array): bigint {
+  let x = 0n;
+  for (let i = 7; i >= 0; i--) {
+    x = (x << 8n) + BigInt(bytes[i]);
+  }
+  return x;
+};
+
+EncryptionUtils.prototype._ed25519SkToScalar = function (sk: Uint8Array): bigint {
+  // Use first 32 bytes (seed) and map to Ristretto scalar domain
+  const seed = sk.slice(0, 32);
+  return this._bytesToScalar(seed);
+};

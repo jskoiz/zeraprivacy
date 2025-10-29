@@ -89,7 +89,7 @@ export async function init(config: GhostSolConfig): Promise<void> {
     
   } catch (error) {
     throw new GhostSolError(
-      `Failed to initialize GhostSol SDK in ${mode} mode: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      `Failed to initialize GhostSol SDK in ${currentMode} mode: ${error instanceof Error ? error.message : 'Unknown error'}`,
       'INITIALIZATION_ERROR',
       error instanceof Error ? error : undefined
     );

@@ -17,7 +17,10 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { WalletAdapter } from '../core/types';
-import { init, getAddress, getBalance, compress, transfer, decompress, fundDevnet, isInitialized } from '../index';
+// Use a browser-only lightweight API that avoids importing privacy crypto
+async function loadSdk() {
+  return await import('./browserApi');
+}
 
 /**
  * State interface for GhostSol context
@@ -42,7 +45,7 @@ interface GhostSolActions {
   /** Transfer compressed tokens */
   transfer: (to: string, amount: number) => Promise<string>;
   /** Decompress SOL (unshield) */
-  decompress: (amount: number, to?: string) => Promise<string>;
+  decompress: (amount: number) => Promise<string>;
   /** Request devnet airdrop */
   fundDevnet: (amount?: number) => Promise<string>;
   /** Refresh balance and address */
@@ -116,12 +119,14 @@ export function GhostSolProvider({
 
       try {
         // Initialize SDK with wallet and cluster configuration
+        const { init } = await loadSdk();
         await init({
           wallet,
           cluster,
         });
 
         // Get initial address and balance
+        const { getAddress, getBalance } = await loadSdk();
         const address = getAddress();
         const balance = await getBalance();
 
@@ -148,11 +153,13 @@ export function GhostSolProvider({
    * Refresh balance and address
    */
   const refresh = async (): Promise<void> => {
+    const { isInitialized } = await loadSdk();
     if (!isInitialized()) {
       return;
     }
 
     try {
+      const { getAddress, getBalance } = await loadSdk();
       const address = getAddress();
       const balance = await getBalance();
 
@@ -175,6 +182,7 @@ export function GhostSolProvider({
    */
   const handleCompress = async (amount: number): Promise<string> => {
     try {
+      const { compress } = await loadSdk();
       const signature = await compress(amount);
       await refresh(); // Refresh balance after successful operation
       return signature;
@@ -192,6 +200,7 @@ export function GhostSolProvider({
    */
   const handleTransfer = async (to: string, amount: number): Promise<string> => {
     try {
+      const { transfer } = await loadSdk();
       const signature = await transfer(to, amount);
       await refresh(); // Refresh balance after successful operation
       return signature;
@@ -207,9 +216,10 @@ export function GhostSolProvider({
   /**
    * Decompress SOL with automatic state refresh
    */
-  const handleDecompress = async (amount: number, to?: string): Promise<string> => {
+  const handleDecompress = async (amount: number): Promise<string> => {
     try {
-      const signature = await decompress(amount, to);
+      const { decompress } = await loadSdk();
+      const signature = await decompress(amount);
       await refresh(); // Refresh balance after successful operation
       return signature;
     } catch (error) {
@@ -226,6 +236,7 @@ export function GhostSolProvider({
    */
   const handleFundDevnet = async (amount: number = 2): Promise<string> => {
     try {
+      const { fundDevnet } = await loadSdk();
       const signature = await fundDevnet(amount);
       await refresh(); // Refresh balance after successful operation
       return signature;
