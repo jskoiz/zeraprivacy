@@ -1,0 +1,367 @@
+{
+  "dashboard_title": "GhostSOL Production Monitoring",
+  "description": "Comprehensive monitoring for GhostSOL RPC, Forester, and SDK operations",
+  "layout_type": "ordered",
+  "widgets": [
+    {
+      "id": "rpc_response_time",
+      "definition": {
+        "title": "RPC Response Time",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "avg:ghostsol.rpc.latency{*} by {provider}",
+            "display_type": "line",
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "Response Time (ms)",
+          "scale": "linear",
+          "include_zero": true,
+          "min": "auto",
+          "max": "auto"
+        },
+        "markers": [
+          {
+            "value": "y = 1000",
+            "display_type": "error dashed",
+            "label": "Target (1s)"
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 0,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": "rpc_percentiles",
+      "definition": {
+        "title": "RPC Response Time Percentiles",
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "p50:ghostsol.rpc.latency{*}",
+            "aggregator": "avg",
+            "conditional_formats": [
+              {
+                "comparator": "<",
+                "value": 500,
+                "palette": "white_on_green"
+              },
+              {
+                "comparator": ">=",
+                "value": 500,
+                "palette": "white_on_yellow"
+              }
+            ]
+          }
+        ],
+        "custom_unit": "ms",
+        "precision": 0,
+        "text_align": "center"
+      },
+      "layout": {
+        "x": 6,
+        "y": 0,
+        "width": 2,
+        "height": 1
+      }
+    },
+    {
+      "id": "rpc_p95",
+      "definition": {
+        "title": "P95 Response Time",
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "p95:ghostsol.rpc.latency{*}",
+            "aggregator": "avg",
+            "conditional_formats": [
+              {
+                "comparator": "<",
+                "value": 1000,
+                "palette": "white_on_green"
+              },
+              {
+                "comparator": ">=",
+                "value": 1000,
+                "palette": "white_on_red"
+              }
+            ]
+          }
+        ],
+        "custom_unit": "ms",
+        "precision": 0,
+        "text_align": "center"
+      },
+      "layout": {
+        "x": 8,
+        "y": 0,
+        "width": 2,
+        "height": 1
+      }
+    },
+    {
+      "id": "rpc_p99",
+      "definition": {
+        "title": "P99 Response Time",
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "p99:ghostsol.rpc.latency{*}",
+            "aggregator": "avg",
+            "conditional_formats": [
+              {
+                "comparator": "<",
+                "value": 2000,
+                "palette": "white_on_green"
+              },
+              {
+                "comparator": ">=",
+                "value": 2000,
+                "palette": "white_on_red"
+              }
+            ]
+          }
+        ],
+        "custom_unit": "ms",
+        "precision": 0,
+        "text_align": "center"
+      },
+      "layout": {
+        "x": 10,
+        "y": 0,
+        "width": 2,
+        "height": 1
+      }
+    },
+    {
+      "id": "forester_queue_depth",
+      "definition": {
+        "title": "Forester Queue Depth",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "avg:ghostsol.forester.queue_depth{*}",
+            "display_type": "area",
+            "style": {
+              "palette": "warm",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "Queue Depth",
+          "scale": "linear",
+          "include_zero": true
+        },
+        "markers": [
+          {
+            "value": "y = 100",
+            "display_type": "warning dashed",
+            "label": "Warning Threshold"
+          },
+          {
+            "value": "y = 200",
+            "display_type": "error solid",
+            "label": "Critical Threshold"
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 3,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": "transaction_success_rate",
+      "definition": {
+        "title": "Transaction Success Rate",
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "(sum:ghostsol.transaction.success{*} / (sum:ghostsol.transaction.success{*} + sum:ghostsol.transaction.failure{*})) * 100",
+            "aggregator": "avg",
+            "conditional_formats": [
+              {
+                "comparator": ">",
+                "value": 99,
+                "palette": "white_on_green"
+              },
+              {
+                "comparator": ">=",
+                "value": 95,
+                "palette": "white_on_yellow"
+              },
+              {
+                "comparator": "<",
+                "value": 95,
+                "palette": "white_on_red"
+              }
+            ]
+          }
+        ],
+        "custom_unit": "%",
+        "precision": 2,
+        "text_align": "center"
+      },
+      "layout": {
+        "x": 6,
+        "y": 3,
+        "width": 3,
+        "height": 3
+      }
+    },
+    {
+      "id": "error_rate",
+      "definition": {
+        "title": "Error Rate by Operation",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:ghostsol.errors{*} by {operation}.as_rate()",
+            "display_type": "bars",
+            "style": {
+              "palette": "warm"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "Errors per second",
+          "scale": "linear"
+        }
+      },
+      "layout": {
+        "x": 9,
+        "y": 3,
+        "width": 3,
+        "height": 3
+      }
+    },
+    {
+      "id": "indexer_sync_status",
+      "definition": {
+        "title": "Indexer Blocks Behind",
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "avg:ghostsol.indexer.blocks_behind{*}",
+            "aggregator": "last",
+            "conditional_formats": [
+              {
+                "comparator": "<",
+                "value": 10,
+                "palette": "white_on_green"
+              },
+              {
+                "comparator": ">=",
+                "value": 10,
+                "palette": "white_on_yellow"
+              },
+              {
+                "comparator": ">=",
+                "value": 50,
+                "palette": "white_on_red"
+              }
+            ]
+          }
+        ],
+        "custom_unit": "blocks",
+        "precision": 0,
+        "text_align": "center"
+      },
+      "layout": {
+        "x": 0,
+        "y": 6,
+        "width": 3,
+        "height": 2
+      }
+    },
+    {
+      "id": "api_availability",
+      "definition": {
+        "title": "API Endpoint Availability",
+        "type": "check_status",
+        "check": "ghostsol.api.health",
+        "grouping": "cluster",
+        "group_by": ["endpoint"],
+        "tags": ["*"]
+      },
+      "layout": {
+        "x": 3,
+        "y": 6,
+        "width": 3,
+        "height": 2
+      }
+    },
+    {
+      "id": "rpc_failover_events",
+      "definition": {
+        "title": "RPC Failover Events",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:ghostsol.rpc.failover{*} by {from_provider,to_provider}",
+            "display_type": "bars",
+            "style": {
+              "palette": "orange"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "Failover Count",
+          "scale": "linear"
+        }
+      },
+      "layout": {
+        "x": 6,
+        "y": 6,
+        "width": 6,
+        "height": 2
+      }
+    },
+    {
+      "id": "uptime",
+      "definition": {
+        "title": "System Uptime (30d)",
+        "type": "slo",
+        "slo_id": "ghostsol_uptime_slo",
+        "show_error_budget": true,
+        "view_type": "detail",
+        "view_mode": "overall",
+        "time_windows": ["30d"]
+      },
+      "layout": {
+        "x": 0,
+        "y": 8,
+        "width": 12,
+        "height": 2
+      }
+    }
+  ],
+  "template_variables": [
+    {
+      "name": "cluster",
+      "default": "*",
+      "prefix": "cluster"
+    },
+    {
+      "name": "provider",
+      "default": "*",
+      "prefix": "provider"
+    }
+  ],
+  "notify_list": [],
+  "reflow_type": "fixed"
+}

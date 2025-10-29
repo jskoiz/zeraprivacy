@@ -1,0 +1,221 @@
+{
+  "service_name": "GhostSOL Production",
+  "service_key": "${PAGERDUTY_SERVICE_KEY}",
+  "escalation_policies": {
+    "engineering-team": {
+      "name": "Engineering Team",
+      "escalation_rules": [
+        {
+          "escalation_delay_in_minutes": 5,
+          "targets": [
+            {
+              "type": "schedule",
+              "id": "${ENGINEERING_SCHEDULE_ID}"
+            }
+          ]
+        },
+        {
+          "escalation_delay_in_minutes": 15,
+          "targets": [
+            {
+              "type": "user",
+              "id": "${ENGINEERING_MANAGER_ID}"
+            }
+          ]
+        }
+      ]
+    },
+    "on-call-immediate": {
+      "name": "On-Call Immediate",
+      "escalation_rules": [
+        {
+          "escalation_delay_in_minutes": 0,
+          "targets": [
+            {
+              "type": "schedule",
+              "id": "${ON_CALL_SCHEDULE_ID}"
+            }
+          ]
+        },
+        {
+          "escalation_delay_in_minutes": 5,
+          "targets": [
+            {
+              "type": "user",
+              "id": "${CTO_ID}"
+            }
+          ]
+        }
+      ]
+    },
+    "devops-team": {
+      "name": "DevOps Team",
+      "escalation_rules": [
+        {
+          "escalation_delay_in_minutes": 5,
+          "targets": [
+            {
+              "type": "schedule",
+              "id": "${DEVOPS_SCHEDULE_ID}"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "alerts": [
+    {
+      "name": "RPC Response Time High",
+      "description": "RPC p95 response time exceeds 1000ms for 5 minutes",
+      "severity": "warning",
+      "escalation_policy": "engineering-team",
+      "condition": {
+        "metric": "ghostsol.rpc.latency",
+        "aggregation": "p95",
+        "threshold": 1000,
+        "duration_minutes": 5,
+        "operator": ">"
+      },
+      "notification_channels": ["pagerduty", "slack"],
+      "runbook_url": "https://docs.ghostsol.io/runbooks/high-rpc-latency",
+      "tags": ["rpc", "performance"],
+      "auto_resolve_minutes": 10
+    },
+    {
+      "name": "All RPC Providers Down",
+      "description": "All configured RPC providers are unreachable",
+      "severity": "critical",
+      "escalation_policy": "on-call-immediate",
+      "condition": {
+        "metric": "ghostsol.rpc.health",
+        "aggregation": "sum",
+        "threshold": 0,
+        "duration_minutes": 1,
+        "operator": "=="
+      },
+      "notification_channels": ["pagerduty", "slack", "sms"],
+      "runbook_url": "https://docs.ghostsol.io/runbooks/rpc-outage",
+      "tags": ["rpc", "critical", "outage"],
+      "auto_resolve_minutes": 5
+    },
+    {
+      "name": "Forester Queue Overflow",
+      "description": "Forester queue depth exceeds 200 transactions",
+      "severity": "critical",
+      "escalation_policy": "devops-team",
+      "condition": {
+        "metric": "ghostsol.forester.queue_depth",
+        "aggregation": "avg",
+        "threshold": 200,
+        "duration_minutes": 2,
+        "operator": ">"
+      },
+      "notification_channels": ["pagerduty", "slack"],
+      "runbook_url": "https://docs.ghostsol.io/runbooks/forester-queue-overflow",
+      "tags": ["forester", "capacity"],
+      "auto_resolve_minutes": 10
+    },
+    {
+      "name": "Transaction Success Rate Low",
+      "description": "Transaction success rate below 95% for 10 minutes",
+      "severity": "warning",
+      "escalation_policy": "engineering-team",
+      "condition": {
+        "metric": "ghostsol.transaction.success_rate",
+        "aggregation": "avg",
+        "threshold": 95,
+        "duration_minutes": 10,
+        "operator": "<"
+      },
+      "notification_channels": ["pagerduty", "slack"],
+      "runbook_url": "https://docs.ghostsol.io/runbooks/low-success-rate",
+      "tags": ["transactions", "reliability"],
+      "auto_resolve_minutes": 15
+    },
+    {
+      "name": "RPC Provider Failover",
+      "description": "RPC provider failover detected",
+      "severity": "warning",
+      "escalation_policy": "engineering-team",
+      "condition": {
+        "metric": "ghostsol.rpc.failover",
+        "aggregation": "sum",
+        "threshold": 3,
+        "duration_minutes": 5,
+        "operator": ">"
+      },
+      "notification_channels": ["slack"],
+      "runbook_url": "https://docs.ghostsol.io/runbooks/rpc-failover",
+      "tags": ["rpc", "failover"],
+      "auto_resolve_minutes": 30
+    },
+    {
+      "name": "Indexer Sync Lag",
+      "description": "Indexer is more than 50 blocks behind",
+      "severity": "warning",
+      "escalation_policy": "devops-team",
+      "condition": {
+        "metric": "ghostsol.indexer.blocks_behind",
+        "aggregation": "avg",
+        "threshold": 50,
+        "duration_minutes": 5,
+        "operator": ">"
+      },
+      "notification_channels": ["pagerduty", "slack"],
+      "runbook_url": "https://docs.ghostsol.io/runbooks/indexer-lag",
+      "tags": ["indexer", "sync"],
+      "auto_resolve_minutes": 15
+    },
+    {
+      "name": "High Error Rate",
+      "description": "Error rate exceeds 1% for any operation type",
+      "severity": "warning",
+      "escalation_policy": "engineering-team",
+      "condition": {
+        "metric": "ghostsol.errors",
+        "aggregation": "rate",
+        "threshold": 0.01,
+        "duration_minutes": 5,
+        "operator": ">"
+      },
+      "notification_channels": ["pagerduty", "slack"],
+      "runbook_url": "https://docs.ghostsol.io/runbooks/high-error-rate",
+      "tags": ["errors", "reliability"],
+      "auto_resolve_minutes": 10
+    },
+    {
+      "name": "API Endpoint Down",
+      "description": "API endpoint health check failing",
+      "severity": "critical",
+      "escalation_policy": "on-call-immediate",
+      "condition": {
+        "metric": "ghostsol.api.health",
+        "aggregation": "avg",
+        "threshold": 1,
+        "duration_minutes": 2,
+        "operator": "<"
+      },
+      "notification_channels": ["pagerduty", "slack", "sms"],
+      "runbook_url": "https://docs.ghostsol.io/runbooks/api-down",
+      "tags": ["api", "critical", "outage"],
+      "auto_resolve_minutes": 5
+    }
+  ],
+  "notification_integrations": {
+    "slack": {
+      "webhook_url": "${SLACK_WEBHOOK_URL}",
+      "channel": "#ghostsol-alerts",
+      "username": "GhostSOL Monitor"
+    },
+    "email": {
+      "recipients": [
+        "oncall@ghostsol.io",
+        "engineering@ghostsol.io"
+      ]
+    }
+  },
+  "maintenance_windows": {
+    "description": "Scheduled maintenance windows to suppress alerts",
+    "windows": []
+  }
+}
