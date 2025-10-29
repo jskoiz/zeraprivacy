@@ -20,7 +20,7 @@ import {
   EncryptionError 
 } from './errors';
 import { ExtendedWalletAdapter } from '../core/types';
-import { ristretto255 } from '@noble/curves/ristretto255';
+import { ed25519, RistrettoPoint, hashToRistretto255 } from '@noble/curves/ed25519';
 import { sha256 } from '@noble/hashes/sha256';
 
 /**
@@ -280,7 +280,7 @@ export class ViewingKeyManager {
     const r = this._bytesToScalar(rBytes);
 
     const recipientPoint = this._deriveRecipientPoint(recipientPublicKey);
-    const R = ristretto255.RistrettoPoint.BASE.multiply(r);
+    const R = RistrettoPoint.BASE.multiply(r);
     const S = recipientPoint.multiply(r);
     const K = this._kdf(S.toRawBytes());
 
@@ -305,7 +305,7 @@ export class ViewingKeyManager {
     const iv = encryptedPrivateKey.slice(32, 44);
     const sealed = encryptedPrivateKey.slice(44);
 
-    const R = ristretto255.RistrettoPoint.fromHex(Rbytes);
+    const R = RistrettoPoint.fromHex(Rbytes);
     const skScalar = this._ed25519SkToScalar(ownerKeypair.secretKey);
     const S = R.multiply(skScalar);
     const K = this._kdf(S.toRawBytes());
@@ -351,7 +351,7 @@ export interface _VKHelpers {}
 
 export interface ViewingKeyManager {
   _bytesToScalar(bytes: Uint8Array): bigint;
-  _deriveRecipientPoint(pk: PublicKey): ristretto255.RistrettoPoint;
+  _deriveRecipientPoint(pk: PublicKey): RistrettoPoint;
   _kdf(shared: Uint8Array): Uint8Array;
   _randomIv(): Uint8Array;
   _aesGcmSeal(key: Uint8Array, iv: Uint8Array, plaintext: Uint8Array): Promise<Uint8Array>;
@@ -360,7 +360,7 @@ export interface ViewingKeyManager {
 }
 
 ViewingKeyManager.prototype._bytesToScalar = function (bytes: Uint8Array): bigint {
-  const n = ristretto255.CURVE.n;
+  const n = ed25519.CURVE.n;
   const x = BigInt('0x' + Buffer.from(bytes).toString('hex')) % n;
   return x === 0n ? 1n : x;
 };
@@ -371,7 +371,7 @@ ViewingKeyManager.prototype._deriveRecipientPoint = function (pk: PublicKey) {
   const msg = new Uint8Array(domain.length + pk.toBytes().length);
   msg.set(domain, 0);
   msg.set(pk.toBytes(), domain.length);
-  return ristretto255.hashToCurve(msg);
+  return hashToRistretto255(msg, { DST: 'ristretto255_XMD:SHA-512_R255MAP_RO_' });
 };
 
 ViewingKeyManager.prototype._kdf = function (shared: Uint8Array): Uint8Array {
@@ -408,7 +408,7 @@ ViewingKeyManager.prototype._aesGcmOpen = async function (
 
 ViewingKeyManager.prototype._ed25519SkToScalar = function (sk: Uint8Array): bigint {
   const seed = sk.slice(0, 32);
-  const n = ristretto255.CURVE.n;
+  const n = ed25519.CURVE.n;
   const x = BigInt('0x' + Buffer.from(seed).toString('hex')) % n;
   return x === 0n ? 1n : x;
 };
