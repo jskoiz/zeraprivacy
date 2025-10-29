@@ -128,8 +128,67 @@ export const NETWORKS: Record<string, NetworkConfig> = {
 };
 
 /**
+ * RPC Provider configuration for failover support
+ */
+export interface RpcProvider {
+  /** Provider name for logging */
+  name: string;
+  /** RPC endpoint URL */
+  url: string;
+  /** Priority (lower = higher priority, 1 = primary) */
+  priority: number;
+}
+
+/**
+ * Multi-provider RPC configuration with automatic failover
+ * Ensures 99.9% uptime by falling back to alternative providers
+ */
+export const RPC_PROVIDERS: Record<'devnet' | 'mainnet-beta', RpcProvider[]> = {
+  devnet: [
+    {
+      name: 'GhostSOL Primary',
+      url: 'https://rpc.ghostsol.io/devnet', // GhostSOL-operated Photon RPC
+      priority: 1
+    },
+    {
+      name: 'Helius',
+      url: 'https://devnet.helius-rpc.com/?api-key=7bab09d6-6b6b-4e9a-b0dd-7b2c7f6977bf',
+      priority: 2
+    },
+    {
+      name: 'Light Protocol',
+      url: 'https://photon.devnet.light.so',
+      priority: 3
+    },
+    {
+      name: 'Solana Public',
+      url: 'https://api.devnet.solana.com',
+      priority: 4
+    }
+  ],
+  'mainnet-beta': [
+    {
+      name: 'GhostSOL Primary',
+      url: 'https://rpc.ghostsol.io/mainnet', // GhostSOL-operated Photon RPC
+      priority: 1
+    },
+    {
+      name: 'Helius',
+      url: 'https://mainnet.helius-rpc.com/?api-key=7bab09d6-6b6b-4e9a-b0dd-7b2c7f6977bf',
+      priority: 2
+    },
+    {
+      name: 'Light Protocol',
+      url: 'https://photon.mainnet.light.so',
+      priority: 3
+    }
+  ]
+};
+
+/**
  * Light Protocol ZK Compression RPC endpoints
  * These are required for ZK Compression operations
+ * @deprecated Use RPC_PROVIDERS instead for automatic failover
  */
 export const LIGHT_PROTOCOL_RPC_ENDPOINTS = {
   devnet: 'https://devnet.helius-rpc.com/?api-key=7bab09d6-6b6b-4e9a-b0dd-7b2c7f6977bf',

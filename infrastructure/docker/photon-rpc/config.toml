@@ -1,0 +1,108 @@
+# GhostSOL Photon RPC Configuration
+# Light Protocol Indexer settings
+
+[indexer]
+# Solana cluster to index (devnet, mainnet-beta)
+cluster = "devnet"
+
+# Solana RPC endpoint
+rpc_url = "https://api.devnet.solana.com"
+
+# WebSocket endpoint
+ws_url = "wss://api.devnet.solana.com"
+
+# Number of concurrent indexing workers
+workers = 8
+
+# Batch size for processing transactions
+batch_size = 100
+
+# Indexing start slot (0 for genesis, "latest" for recent)
+start_slot = "latest"
+
+[server]
+# Server bind address
+host = "0.0.0.0"
+
+# RPC port
+port = 8899
+
+# Health check port
+health_port = 8080
+
+# WebSocket port
+ws_port = 8900
+
+# Maximum concurrent connections
+max_connections = 1000
+
+# Request timeout (seconds)
+timeout = 30
+
+[database]
+# Database connection URL
+# Format: postgresql://user:password@host:port/database
+url = "postgresql://photon:photon@postgres:5432/photon"
+
+# Connection pool size
+pool_size = 20
+
+# Maximum lifetime of connections (seconds)
+max_lifetime = 3600
+
+[storage]
+# Data directory for local storage
+data_dir = "/data/photon-rpc"
+
+# State tree storage backend (memory, disk, postgres)
+backend = "postgres"
+
+# Cache size for merkle trees (MB)
+cache_size = 8192
+
+[monitoring]
+# Enable Prometheus metrics
+enabled = true
+
+# Metrics port
+metrics_port = 9090
+
+# Metrics path
+metrics_path = "/metrics"
+
+[logging]
+# Log level (trace, debug, info, warn, error)
+level = "info"
+
+# Log format (json, pretty)
+format = "json"
+
+# Log output (stdout, file)
+output = "stdout"
+
+[compression]
+# ZK Compression settings
+
+# Enable compression indexing
+enabled = true
+
+# Compression program ID (Light Protocol)
+program_id = "compr6CUsB5m2jS4Y3831ztGSTnDpnKJTKS95d64XVq"
+
+# Nullifier queue program ID
+nullifier_queue_program_id = "nfq1K6MHp4g5cjvYmw2JkCmZGvYVtFy7g3r2dZXQz5M"
+
+[performance]
+# Performance optimization settings
+
+# Enable parallel processing
+parallel = true
+
+# Number of CPU threads to use (0 = auto)
+threads = 0
+
+# Memory limit (MB, 0 = unlimited)
+memory_limit = 0
+
+# Enable aggressive caching
+aggressive_cache = true

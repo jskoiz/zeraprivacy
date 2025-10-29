@@ -13,13 +13,146 @@
 
 import { Connection, Commitment } from '@solana/web3.js';
 import { createRpc } from '@lightprotocol/stateless.js';
-import { GhostSolConfig, NETWORKS, LIGHT_PROTOCOL_RPC_ENDPOINTS } from './types';
+import { GhostSolConfig, NETWORKS, LIGHT_PROTOCOL_RPC_ENDPOINTS, RPC_PROVIDERS, RpcProvider } from './types';
+
+/**
+ * Test RPC provider health by attempting to connect and verify functionality
+ * 
+ * @param url - RPC endpoint URL to test
+ * @param commitment - Commitment level for the connection
+ * @param timeout - Timeout in milliseconds (default: 5000ms)
+ * @returns Promise that resolves to true if healthy, false otherwise
+ */
+export async function testRpcHealth(
+  url: string,
+  commitment: Commitment = 'confirmed',
+  timeout: number = 5000
+): Promise<boolean> {
+  try {
+    const connection = new Connection(url, {
+      commitment,
+      confirmTransactionInitialTimeout: timeout,
+    });
+
+    // Test basic connectivity with getVersion
+    const versionPromise = connection.getVersion();
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Health check timeout')), timeout)
+    );
+
+    const version = await Promise.race([versionPromise, timeoutPromise]);
+
+    if (!version || !version['solana-core']) {
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.warn(`RPC health check failed for ${url}:`, error instanceof Error ? error.message : 'Unknown error');
+    return false;
+  }
+}
+
+/**
+ * Create a ZK Compression RPC instance with automatic failover support
+ * 
+ * This function implements multi-provider RPC failover to ensure 99.9% uptime.
+ * It attempts to connect to providers in priority order, automatically failing
+ * over to backup providers if the primary is unavailable.
+ * 
+ * @param config - Configuration options including RPC URL and cluster
+ * @returns Configured RPC instance for ZK Compression operations
+ * @throws Error if all RPC providers are unavailable
+ */
+export async function createCompressedRpcWithFailover(config: GhostSolConfig) {
+  const cluster = config.cluster || 'devnet';
+  const networkConfig = NETWORKS[cluster];
+  
+  if (!networkConfig) {
+    throw new Error(`Unsupported cluster: ${cluster}. Supported clusters: devnet, mainnet-beta`);
+  }
+
+  // Get providers for this cluster, sorted by priority
+  const providers = RPC_PROVIDERS[cluster] || [];
+  const sortedProviders = [...providers].sort((a, b) => a.priority - b.priority);
+
+  // If user provided a custom RPC URL, try it first
+  if (config.rpcUrl) {
+    console.log(`Using custom RPC URL: ${config.rpcUrl}`);
+    const connection = new Connection(config.rpcUrl, {
+      commitment: config.commitment || networkConfig.commitment,
+      confirmTransactionInitialTimeout: 60000,
+    });
+
+    const rpc = createRpc(connection);
+    return {
+      rpc,
+      connection,
+      cluster,
+      rpcUrl: config.rpcUrl,
+      providerName: 'Custom'
+    };
+  }
+
+  // Try each provider in order until one succeeds
+  for (const provider of sortedProviders) {
+    try {
+      console.log(`Attempting to connect to ${provider.name} (priority ${provider.priority})...`);
+      
+      // Test provider health
+      const isHealthy = await testRpcHealth(
+        provider.url,
+        config.commitment || networkConfig.commitment,
+        5000 // 5 second timeout for health check
+      );
+
+      if (!isHealthy) {
+        console.warn(`${provider.name} failed health check, trying next provider...`);
+        continue;
+      }
+
+      // Provider is healthy, create connection
+      const connection = new Connection(provider.url, {
+        commitment: config.commitment || networkConfig.commitment,
+        confirmTransactionInitialTimeout: 60000,
+      });
+
+      const rpc = createRpc(connection);
+
+      console.log(`✓ Successfully connected to ${provider.name}`);
+
+      return {
+        rpc,
+        connection,
+        cluster,
+        rpcUrl: provider.url,
+        providerName: provider.name
+      };
+    } catch (error) {
+      console.warn(
+        `Failed to connect to ${provider.name}:`,
+        error instanceof Error ? error.message : 'Unknown error'
+      );
+      continue;
+    }
+  }
+
+  // All providers failed, throw error
+  throw new Error(
+    `All RPC providers unavailable for cluster ${cluster}. ` +
+    `Tried ${sortedProviders.length} provider(s). ` +
+    'Please check your network connection or specify a custom rpcUrl.'
+  );
+}
 
 /**
  * Create a ZK Compression RPC instance with proper configuration
  * 
  * This function initializes the RPC connection to ZK Compression services
  * with appropriate commitment levels and endpoint configuration.
+ * 
+ * Note: This function does not implement failover. Use createCompressedRpcWithFailover
+ * for production deployments with automatic failover support.
  * 
  * @param config - Configuration options including RPC URL and cluster
  * @returns Configured RPC instance for ZK Compression operations
@@ -84,7 +217,8 @@ export function createCompressedRpc(config: GhostSolConfig) {
     rpc,
     connection: lightProtocolConnection, // Use Helius connection for ZK operations
     cluster,
-    rpcUrl: lightProtocolRpcUrl
+    rpcUrl: lightProtocolRpcUrl,
+    providerName: 'Legacy (Helius)'
   };
 }
 

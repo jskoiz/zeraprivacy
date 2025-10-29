@@ -1,0 +1,120 @@
+version: '3.8'
+
+services:
+  # PostgreSQL database for Photon RPC state storage
+  postgres:
+    image: postgres:15-alpine
+    container_name: ghostsol-photon-db
+    environment:
+      POSTGRES_USER: photon
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-photon_secure_password}
+      POSTGRES_DB: photon
+      POSTGRES_INITDB_ARGS: "-E UTF8"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - photon-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U photon"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Photon RPC Indexer
+  photon-rpc:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        LIGHT_PROTOCOL_VERSION: main
+    container_name: ghostsol-photon-rpc
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      SOLANA_CLUSTER: ${SOLANA_CLUSTER:-devnet}
+      SOLANA_RPC_URL: ${SOLANA_RPC_URL:-https://api.devnet.solana.com}
+      DATABASE_URL: postgresql://photon:${DB_PASSWORD:-photon_secure_password}@postgres:5432/photon
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: photon
+      RUST_LOG: ${LOG_LEVEL:-info}
+    volumes:
+      - photon_data:/data/photon-rpc
+      - ./config.toml:/etc/photon-rpc/config.toml:ro
+    ports:
+      - "8899:8899"  # RPC endpoint
+      - "8080:8080"  # Health check
+      - "8900:8900"  # WebSocket
+      - "9090:9090"  # Metrics
+    networks:
+      - photon-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '15'
+          memory: 30G
+        reservations:
+          cpus: '8'
+          memory: 16G
+
+  # Prometheus for monitoring (optional)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: ghostsol-prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9091:9090"
+    networks:
+      - photon-network
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+    restart: unless-stopped
+
+  # Grafana for visualization (optional)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: ghostsol-grafana
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_INSTALL_PLUGINS: grafana-clock-panel
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana-dashboards:/etc/grafana/provisioning/dashboards:ro
+    ports:
+      - "3000:3000"
+    networks:
+      - photon-network
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  photon_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  photon-network:
+    driver: bridge
