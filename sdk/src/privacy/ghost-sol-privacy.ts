@@ -113,23 +113,17 @@ export class GhostSolPrivacy {
     this._assertInitialized();
     
     try {
-      const mintKeypair = Keypair.generate();
-      
       // Create confidential mint using SPL Token 2022
-      await this.confidentialTransferManager.createConfidentialMint(
-        mintKeypair,
-        this.wallet.publicKey, // mint authority
-        this.config.enableViewingKeys ? this.wallet.publicKey : undefined // auditor authority
-      );
+      const mintAddress = await this.confidentialTransferManager.createConfidentialMint();
       
       this.confidentialMint = {
-        address: mintKeypair.publicKey,
+        address: mintAddress,
         authority: this.wallet.publicKey,
         confidentialTransferEnabled: true,
         auditorAuthority: this.config.enableViewingKeys ? this.wallet.publicKey : undefined
       };
       
-      return mintKeypair.publicKey;
+      return mintAddress;
       
     } catch (error) {
       throw new ConfidentialAccountError(
@@ -153,8 +147,7 @@ export class GhostSolPrivacy {
     
     try {
       const accountAddress = await this.confidentialTransferManager.createConfidentialAccount(
-        mintAddress,
-        this.wallet.publicKey
+        mintAddress
       );
       
       this.confidentialAccount = {

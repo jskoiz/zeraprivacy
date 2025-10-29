@@ -165,6 +165,28 @@ export interface PrivateTransferResult {
 }
 
 /**
+ * Confidential account information from on-chain data
+ */
+export interface ConfidentialAccountInfo {
+  /** Account address */
+  address: PublicKey;
+  /** Mint address */
+  mint: PublicKey;
+  /** Account owner */
+  owner: PublicKey;
+  /** Encrypted balance */
+  encryptedBalance: EncryptedBalance;
+  /** Pending balance credits (encrypted) */
+  pendingBalance?: EncryptedBalance;
+  /** Whether confidential transfers are approved */
+  approved: boolean;
+  /** ElGamal public key for encryption */
+  elGamalPublicKey?: Uint8Array;
+  /** Maximum pending balance credit counter */
+  maxPendingBalanceCredits?: number;
+}
+
+/**
  * Configuration for initializing the privacy SDK
  */
 export interface PrivacySdkConfig {

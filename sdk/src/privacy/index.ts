@@ -28,7 +28,8 @@ export type {
   PrivacyMode,
   ZKProof,
   ConfidentialMint,
-  ConfidentialAccount
+  ConfidentialAccount,
+  ConfidentialAccountInfo
 } from './types';
 
 // Error exports  
