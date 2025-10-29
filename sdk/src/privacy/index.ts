@@ -19,6 +19,14 @@ export { ConfidentialTransferManager } from './confidential-transfer';
 export { EncryptionUtils } from './encryption';
 export { ViewingKeyManager } from './viewing-keys';
 
+// Export foundational encryption utilities
+export {
+  ElGamalEncryption,
+  PedersenCommitment,
+  generateRandomScalar,
+  validateAmount
+} from './encryption';
+
 // Type exports
 export type {
   PrivacyConfig,
@@ -30,6 +38,16 @@ export type {
   ConfidentialMint,
   ConfidentialAccount
 } from './types';
+
+// Export encryption types
+export type {
+  ElGamalKeypair,
+  ElGamalPublicKey,
+  ElGamalSecretKey,
+  ElGamalCiphertext,
+  PedersenCommitment as PedersenCommitmentType,
+  Scalar
+} from './encryption';
 
 // Error exports  
 export {
