@@ -140,20 +140,84 @@ export interface RpcProvider {
 }
 
 /**
- * Multi-provider RPC configuration with automatic failover
- * Ensures 99.9% uptime by falling back to alternative providers
+ * Get Helius RPC URL with API key from environment variable
+ * 
+ * @param cluster - The Solana cluster (devnet or mainnet-beta)
+ * @returns Helius RPC URL with API key if available, or undefined
+ */
+function getHeliusRpcUrl(cluster: 'devnet' | 'mainnet-beta'): string | undefined {
+  // Try to get API key from environment variable
+  const apiKey = typeof process !== 'undefined' ? process.env.HELIUS_API_KEY : undefined;
+  
+  if (!apiKey) {
+    console.warn('HELIUS_API_KEY not set - Helius RPC will be skipped in failover');
+    return undefined;
+  }
+  
+  const subdomain = cluster === 'mainnet-beta' ? 'mainnet' : 'devnet';
+  return `https://${subdomain}.helius-rpc.com/?api-key=${apiKey}`;
+}
+
+/**
+ * Get RPC providers with proper API key configuration
+ * 
+ * This function dynamically builds the provider list, including or excluding
+ * providers based on whether required API keys are available.
+ * 
+ * @param cluster - The Solana cluster
+ * @returns Array of RPC providers sorted by priority
+ */
+export function getRpcProviders(cluster: 'devnet' | 'mainnet-beta'): RpcProvider[] {
+  const providers: RpcProvider[] = [
+    {
+      name: 'GhostSOL Primary',
+      url: `https://rpc.ghostsol.io/${cluster === 'mainnet-beta' ? 'mainnet' : 'devnet'}`,
+      priority: 1
+    },
+    {
+      name: 'Light Protocol',
+      url: `https://photon.${cluster === 'mainnet-beta' ? 'mainnet' : 'devnet'}.light.so`,
+      priority: 3
+    }
+  ];
+
+  // Add Helius if API key is available
+  const heliusUrl = getHeliusRpcUrl(cluster);
+  if (heliusUrl) {
+    providers.push({
+      name: 'Helius',
+      url: heliusUrl,
+      priority: 2
+    });
+  }
+
+  // Add Solana public RPC for devnet
+  if (cluster === 'devnet') {
+    providers.push({
+      name: 'Solana Public',
+      url: 'https://api.devnet.solana.com',
+      priority: 4
+    });
+  }
+
+  // Sort by priority
+  return providers.sort((a, b) => a.priority - b.priority);
+}
+
+/**
+ * Static RPC provider configuration (for backward compatibility)
+ * 
+ * Note: This does not include Helius URLs to avoid hardcoded secrets.
+ * Use getRpcProviders() function instead for full provider list with API key support.
+ * 
+ * @deprecated Use getRpcProviders() instead
  */
 export const RPC_PROVIDERS: Record<'devnet' | 'mainnet-beta', RpcProvider[]> = {
   devnet: [
     {
       name: 'GhostSOL Primary',
-      url: 'https://rpc.ghostsol.io/devnet', // GhostSOL-operated Photon RPC
+      url: 'https://rpc.ghostsol.io/devnet',
       priority: 1
-    },
-    {
-      name: 'Helius',
-      url: 'https://devnet.helius-rpc.com/?api-key=7bab09d6-6b6b-4e9a-b0dd-7b2c7f6977bf',
-      priority: 2
     },
     {
       name: 'Light Protocol',
@@ -169,13 +233,8 @@ export const RPC_PROVIDERS: Record<'devnet' | 'mainnet-beta', RpcProvider[]> = {
   'mainnet-beta': [
     {
       name: 'GhostSOL Primary',
-      url: 'https://rpc.ghostsol.io/mainnet', // GhostSOL-operated Photon RPC
+      url: 'https://rpc.ghostsol.io/mainnet',
       priority: 1
-    },
-    {
-      name: 'Helius',
-      url: 'https://mainnet.helius-rpc.com/?api-key=7bab09d6-6b6b-4e9a-b0dd-7b2c7f6977bf',
-      priority: 2
     },
     {
       name: 'Light Protocol',
@@ -188,9 +247,12 @@ export const RPC_PROVIDERS: Record<'devnet' | 'mainnet-beta', RpcProvider[]> = {
 /**
  * Light Protocol ZK Compression RPC endpoints
  * These are required for ZK Compression operations
- * @deprecated Use RPC_PROVIDERS instead for automatic failover
+ * 
+ * Note: To use Helius RPC, set HELIUS_API_KEY environment variable
+ * 
+ * @deprecated Use getRpcProviders() instead for automatic failover
  */
-export const LIGHT_PROTOCOL_RPC_ENDPOINTS = {
-  devnet: 'https://devnet.helius-rpc.com/?api-key=7bab09d6-6b6b-4e9a-b0dd-7b2c7f6977bf',
-  mainnet: 'https://mainnet.helius-rpc.com/?api-key=7bab09d6-6b6b-4e9a-b0dd-7b2c7f6977bf'
+export const LIGHT_PROTOCOL_RPC_ENDPOINTS: Record<string, string> = {
+  devnet: getHeliusRpcUrl('devnet') || 'https://api.devnet.solana.com',
+  mainnet: getHeliusRpcUrl('mainnet-beta') || 'https://api.mainnet-beta.solana.com'
 };

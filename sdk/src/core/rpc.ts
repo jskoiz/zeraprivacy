@@ -13,7 +13,7 @@
 
 import { Connection, Commitment } from '@solana/web3.js';
 import { createRpc } from '@lightprotocol/stateless.js';
-import { GhostSolConfig, NETWORKS, LIGHT_PROTOCOL_RPC_ENDPOINTS, RPC_PROVIDERS, RpcProvider } from './types';
+import { GhostSolConfig, NETWORKS, LIGHT_PROTOCOL_RPC_ENDPOINTS, getRpcProviders, RpcProvider } from './types';
 
 /**
  * Test RPC provider health by attempting to connect and verify functionality
@@ -72,8 +72,8 @@ export async function createCompressedRpcWithFailover(config: GhostSolConfig) {
     throw new Error(`Unsupported cluster: ${cluster}. Supported clusters: devnet, mainnet-beta`);
   }
 
-  // Get providers for this cluster, sorted by priority
-  const providers = RPC_PROVIDERS[cluster] || [];
+  // Get providers for this cluster (includes API key configuration)
+  const providers = getRpcProviders(cluster);
   const sortedProviders = [...providers].sort((a, b) => a.priority - b.priority);
 
   // If user provided a custom RPC URL, try it first

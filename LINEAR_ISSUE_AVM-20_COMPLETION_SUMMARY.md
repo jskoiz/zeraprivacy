@@ -624,6 +624,66 @@ Enterprise-grade operational procedures:
 
 ---
 
+## Security Improvements
+
+### GitGuardian Secret Detection (FIXED)
+
+**Issue**: Hardcoded Helius API key detected in `sdk/src/core/types.ts`
+
+**Resolution**:
+1. ✅ Removed all hardcoded API keys from source code
+2. ✅ Implemented environment variable-based API key configuration
+3. ✅ Created `.env.example` template for secure configuration
+4. ✅ Added comprehensive `SECURITY.md` documentation
+5. ✅ Updated `.gitignore` to prevent secret commits
+6. ✅ Updated SDK README with security best practices
+
+**Implementation**:
+
+```typescript
+// OLD (INSECURE - Had hardcoded API key)
+export const RPC_PROVIDERS = {
+  devnet: [
+    { name: 'Helius', url: 'https://devnet.helius-rpc.com/?api-key=HARDCODED' }
+  ]
+};
+
+// NEW (SECURE - Uses environment variables)
+function getHeliusRpcUrl(cluster: string): string | undefined {
+  const apiKey = process.env.HELIUS_API_KEY;
+  if (!apiKey) {
+    console.warn('HELIUS_API_KEY not set - Helius RPC will be skipped');
+    return undefined;
+  }
+  return `https://${cluster}.helius-rpc.com/?api-key=${apiKey}`;
+}
+
+export function getRpcProviders(cluster: string): RpcProvider[] {
+  // Dynamically builds provider list based on available API keys
+}
+```
+
+**New Security Files**:
+- `sdk/.env.example` - Environment variable template
+- `sdk/SECURITY.md` - Comprehensive security guidelines
+- `sdk/.gitignore` - Enhanced to prevent secret commits
+- `sdk/README.md` - Security best practices documentation
+
+**SDK Behavior Without API Keys**:
+- ✅ SDK works without `HELIUS_API_KEY`
+- ✅ Automatically skips Helius in failover chain
+- ✅ Falls back to: GhostSOL → Light Protocol → Solana Public
+- ✅ Logs warning but continues normally
+
+**Best Practices Implemented**:
+- Environment variables for API keys
+- `.env` files in `.gitignore`
+- Clear documentation on secret management
+- Graceful degradation when keys missing
+- No functionality loss without optional keys
+
+---
+
 ## Conclusion
 
 All success criteria for Linear issue AVM-20 have been met:

@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment variables (NEVER COMMIT)
+.env
+.env.local
+.env.*.local
+
+# API Keys and Secrets (NEVER COMMIT)
+*.key
+*.pem
+secrets.json
+*.secret
+
+# OS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
