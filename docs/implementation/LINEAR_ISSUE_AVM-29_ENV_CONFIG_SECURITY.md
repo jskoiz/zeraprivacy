@@ -120,14 +120,14 @@ Currently, the GhostSOL SDK and example applications rely on environment variabl
 
 1. **Create Config Module** (`sdk/src/core/env-config.ts`)
    ```typescript
-   interface GhostSolEnvConfig {
+   interface ZeraEnvConfig {
      cluster: 'devnet' | 'mainnet-beta';
      rpcUrl: string;
      rpcUrlFallback?: string;
      // ... other config
    }
    
-   function loadAndValidateConfig(): GhostSolEnvConfig
+   function loadAndValidateConfig(): ZeraEnvConfig
    ```
 
 2. **Implement Validation**

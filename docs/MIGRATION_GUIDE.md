@@ -1,6 +1,6 @@
 # Migration Guide
 
-This guide helps you migrate between major versions of the Ghost Sol SDK.
+This guide helps you migrate between major versions of the Zera SDK.
 
 ## Table of Contents
 
@@ -26,13 +26,13 @@ This guide helps you migrate between major versions of the Ghost Sol SDK.
 
 1. **Update Dependencies**
    ```bash
-   npm install ghost-sol@latest
+   npm install zera@latest
    ```
 
 2. **Update Imports** (if changed)
    ```typescript
    // Check if import paths have changed
-   import { init, compress, transfer } from 'ghost-sol';
+   import { init, compress, transfer } from 'zera';
    ```
 
 3. **Update Configuration** (if changed)
@@ -68,14 +68,14 @@ This section will be updated when v1.0.0 is released. Expected changes:
 **Beta (v0.1.0-beta)**:
 ```typescript
 // Prototype encryption - for testing only
-import { encryptBalance } from 'ghost-sol';
+import { encryptBalance } from 'zera';
 const encrypted = await encryptBalance(balance);
 ```
 
 **v1.0.0 (Expected)**:
 ```typescript
 // Production encryption with additional security parameters
-import { encryptBalance } from 'ghost-sol';
+import { encryptBalance } from 'zera';
 const encrypted = await encryptBalance(balance, {
   // May require additional configuration
   encryptionLevel: 'standard' // or 'high'
@@ -95,7 +95,7 @@ const encrypted = await encryptBalance(balance, {
 ```typescript
 // Manual ephemeral key collection required
 const ephemeralKeys = [...]; // Manual collection
-const payments = await GhostSol.scanForPayments(
+const payments = await Zera.scanForPayments(
   metaAddress,
   viewPrivateKey,
   ephemeralKeys
@@ -105,7 +105,7 @@ const payments = await GhostSol.scanForPayments(
 **v1.0.0 (Expected)**:
 ```typescript
 // Automated scanning with indexer
-const payments = await GhostSol.scanBlockchainForPayments(
+const payments = await Zera.scanBlockchainForPayments(
   metaAddress,
   viewPrivateKey,
   {
@@ -174,12 +174,12 @@ try {
 
 **v1.0.0 (Expected)**:
 ```typescript
-import { GhostSolError, ErrorCode } from 'ghost-sol';
+import { ZeraError, ErrorCode } from 'zera';
 
 try {
   await compress(amount);
 } catch (error) {
-  if (error instanceof GhostSolError) {
+  if (error instanceof ZeraError) {
     switch (error.code) {
       case ErrorCode.INSUFFICIENT_BALANCE:
         // Handle insufficient balance
@@ -221,7 +221,7 @@ During beta, pin to specific versions to avoid unexpected changes:
 ```json
 {
   "dependencies": {
-    "ghost-sol": "0.1.0-beta"
+    "zera": "0.1.0-beta"
   }
 }
 ```
@@ -234,7 +234,7 @@ Before v1.0.0, use exact versions rather than semver ranges.
 
 1. **Development Environment**
    ```bash
-   npm install ghost-sol@next
+   npm install zera@next
    npm run test
    ```
 
@@ -290,14 +290,14 @@ Always have a rollback strategy:
 ```json
 {
   "dependencies": {
-    "ghost-sol": "0.1.0-beta"  // Known working version
+    "zera": "0.1.0-beta"  // Known working version
   }
 }
 ```
 
 Keep previous version available:
 ```bash
-npm install ghost-sol@0.1.0-beta --save-exact
+npm install zera@0.1.0-beta --save-exact
 ```
 
 ---
@@ -306,7 +306,7 @@ npm install ghost-sol@0.1.0-beta --save-exact
 
 ### Semantic Versioning
 
-Ghost Sol SDK follows [Semantic Versioning](https://semver.org/):
+Zera SDK follows [Semantic Versioning](https://semver.org/):
 
 - **Major version** (x.0.0): Breaking changes
 - **Minor version** (0.x.0): New features, backward compatible

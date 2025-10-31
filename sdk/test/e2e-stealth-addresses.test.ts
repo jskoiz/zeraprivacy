@@ -11,7 +11,7 @@
  */
 
 import { Keypair } from '@solana/web3.js';
-import * as GhostSol from '../src/index';
+import * as Zera from '../src/index';
 
 // Colors for console output
 const colors = {
@@ -55,7 +55,7 @@ function logInfo(message: string) {
  * Main test function
  */
 async function runStealthAddressTests() {
-  logStep('🚀 Starting GhostSol Stealth Address E2E Tests');
+  logStep('🚀 Starting Zera Stealth Address E2E Tests');
   
   let testsPassed = 0;
   let testsFailed = 0;
@@ -75,7 +75,7 @@ async function runStealthAddressTests() {
   
   let allExported = true;
   for (const api of requiredAPIs) {
-    const isExported = typeof (GhostSol as any)[api] === 'function';
+    const isExported = typeof (Zera as any)[api] === 'function';
     if (isExported) {
       logSuccess(`${api} is exported`);
     } else {
@@ -101,7 +101,7 @@ async function runStealthAddressTests() {
     const spendKeypair = Keypair.generate();
     
     try {
-      GhostSol.generateStealthMetaAddress(viewKeypair, spendKeypair);
+      Zera.generateStealthMetaAddress(viewKeypair, spendKeypair);
       logError('API did not enforce privacy mode requirement');
       testsFailed++;
     } catch (error) {
@@ -158,7 +158,7 @@ async function runStealthAddressTests() {
     
     let allSignaturesCorrect = true;
     for (const test of signatureTests) {
-      const func = (GhostSol as any)[test.name];
+      const func = (Zera as any)[test.name];
       if (func && func.length >= test.minParams) {
         logSuccess(`${test.name} has correct signature`);
       } else {

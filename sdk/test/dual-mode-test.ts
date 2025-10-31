@@ -26,7 +26,7 @@ import {
  * Test the dual-mode SDK functionality
  */
 async function runDualModeTest() {
-  console.log('🔀 Starting GhostSol Dual-Mode Test');
+  console.log('🔀 Starting Zera Dual-Mode Test');
   console.log('===================================');
   console.log('🎯 Goal: Demonstrate Privacy vs Efficiency mode APIs');
   console.log('');

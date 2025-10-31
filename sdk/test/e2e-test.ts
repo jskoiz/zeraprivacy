@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 
 /**
- * End-to-End Test Suite for GhostSol SDK
+ * End-to-End Test Suite for Zera SDK
  * 
  * This script tests the complete user flow:
  * 1. Initialize SDK
@@ -14,7 +14,7 @@
  */
 
 import { Keypair, PublicKey, Connection, LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { GhostSol } from '../src/core/ghost-sol';
+import { Zera } from '../src/core/zera';
 import { compressTokens, transferCompressedTokens, decompressTokens } from '../src/core/compression';
 import { createRpc } from '@lightprotocol/stateless.js';
 
@@ -90,7 +90,7 @@ async function waitForConfirmation(connection: Connection, signature: string, ma
 }
 
 async function runE2ETest() {
-  logStep('🚀 Starting GhostSol SDK End-to-End Test');
+  logStep('🚀 Starting Zera SDK End-to-End Test');
   
   try {
     // Step 1: Initialize test wallet and connection
@@ -102,10 +102,10 @@ async function runE2ETest() {
     logInfo(`Test wallet address: ${wallet.publicKey.toBase58()}`);
     logInfo(`Devnet RPC: ${DEVNET_RPC}`);
     
-    // Step 2: Initialize GhostSol SDK
-    logStep('Step 2: Initialize GhostSol SDK');
+    // Step 2: Initialize Zera SDK
+    logStep('Step 2: Initialize Zera SDK');
     
-    const ghostSol = new GhostSol();
+    const ghostSol = new Zera();
     
     await ghostSol.init({
       wallet,

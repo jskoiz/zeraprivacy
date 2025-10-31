@@ -23,7 +23,7 @@ export type Environment = 'development' | 'test' | 'staging' | 'production';
 /**
  * Environment configuration interface
  */
-export interface GhostSolEnvConfig {
+export interface ZeraEnvConfig {
   /** Solana network cluster */
   cluster: 'devnet' | 'mainnet-beta';
   /** Primary RPC endpoint URL */
@@ -181,7 +181,7 @@ export function loadAndValidateConfig(options: {
   rpcUrl?: string;
   /** Environment detection override */
   environment?: Environment;
-} = {}): GhostSolEnvConfig {
+} = {}): ZeraEnvConfig {
   const environment = options.environment || detectEnvironment();
   const isBrowser = isBrowserEnvironment();
   
@@ -262,7 +262,7 @@ export function loadAndValidateConfig(options: {
 /**
  * Get configuration with masked sensitive values for logging
  */
-export function getConfigForLogging(config: GhostSolEnvConfig): Record<string, unknown> {
+export function getConfigForLogging(config: ZeraEnvConfig): Record<string, unknown> {
   const logged: Record<string, unknown> = {
     cluster: config.cluster,
     rpcUrl: config.rpcUrl,

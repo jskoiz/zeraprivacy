@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 
 /**
- * SDK Functionality Test Suite for GhostSol SDK
+ * SDK Functionality Test Suite for Zera SDK
  * 
  * This script tests the SDK functionality without requiring airdrops:
  * 1. Initialize SDK
@@ -14,7 +14,7 @@
  */
 
 import { Keypair, PublicKey, Connection, LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { GhostSol } from '../src/core/ghost-sol';
+import { Zera } from '../src/core/zera';
 import { normalizeWallet } from '../src/core/wallet';
 
 // Test configuration
@@ -88,7 +88,7 @@ async function testSDKInitialization() {
   logStep('Testing SDK Initialization');
   
   const wallet = Keypair.generate();
-  const ghostSol = new GhostSol();
+  const ghostSol = new Zera();
   
   try {
     await ghostSol.init({
@@ -119,7 +119,7 @@ async function testCompressionAPI() {
   logStep('Testing Compression API (Expected to Fail)');
   
   const wallet = Keypair.generate();
-  const ghostSol = new GhostSol();
+  const ghostSol = new Zera();
   
   try {
     await ghostSol.init({
@@ -169,7 +169,7 @@ async function testCompressionAPI() {
 async function testErrorHandling() {
   logStep('Testing Error Handling');
   
-  const ghostSol = new GhostSol();
+  const ghostSol = new Zera();
   
   try {
     // Test operations before initialization
@@ -200,7 +200,7 @@ async function testErrorHandling() {
 }
 
 async function runFunctionalityTest() {
-  logStep('🧪 Starting GhostSol SDK Functionality Test');
+  logStep('🧪 Starting Zera SDK Functionality Test');
   
   try {
     await testWalletNormalization();

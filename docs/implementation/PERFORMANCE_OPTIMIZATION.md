@@ -395,9 +395,9 @@ npm test performance.test.ts
 The optimizations are **automatic** - no code changes needed:
 
 ```typescript
-import { GhostSolSDK } from '@ghostsol/sdk';
+import { ZeraSDK } from '@ghostsol/sdk';
 
-const sdk = new GhostSolSDK({
+const sdk = new ZeraSDK({
   cluster: 'devnet',
   wallet: walletAdapter
 });

@@ -1,6 +1,6 @@
-# GhostSol SDK Setup Guide
+# Zera SDK Setup Guide
 
-Complete setup guide for the GhostSol SDK and demo application.
+Complete setup guide for the Zera SDK and demo application.
 
 ## Table of Contents
 
@@ -34,8 +34,8 @@ Complete setup guide for the GhostSol SDK and demo application.
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/ghost-sol.git
-cd ghost-sol
+git clone https://github.com/your-username/zera.git
+cd zera
 ```
 
 ### 2. Install Dependencies
@@ -67,12 +67,12 @@ npm run build
 Create a new file `test-sdk.js`:
 
 ```javascript
-const { GhostSol } = require('./sdk/dist/index.js');
+const { Zera } = require('./sdk/dist/index.js');
 const { Keypair } = require('@solana/web3.js');
 
 async function testSDK() {
   // Initialize SDK
-  const ghostSol = new GhostSol();
+  const ghostSol = new Zera();
   await ghostSol.init({
     wallet: Keypair.generate(),
     cluster: 'devnet'
@@ -103,9 +103,9 @@ npx tsx test/e2e-test.ts
 The SDK can be configured with various options:
 
 ```typescript
-import { GhostSol } from 'ghost-sol';
+import { Zera } from 'zera';
 
-const ghostSol = new GhostSol();
+const ghostSol = new Zera();
 
 await ghostSol.init({
   wallet: keypair,                    // Required: Wallet instance
@@ -117,7 +117,7 @@ await ghostSol.init({
 
 ### 4. RPC Configuration
 
-The GhostSol SDK uses Helius RPC endpoints for ZK Compression operations. These endpoints are pre-configured and include API keys for reliable access.
+The Zera SDK uses Helius RPC endpoints for ZK Compression operations. These endpoints are pre-configured and include API keys for reliable access.
 
 #### Supported Networks
 
@@ -129,9 +129,9 @@ The GhostSol SDK uses Helius RPC endpoints for ZK Compression operations. These 
 If you need to use a different RPC endpoint, you can specify it during initialization:
 
 ```typescript
-import { GhostSol } from 'ghost-sol';
+import { Zera } from 'zera';
 
-const ghostSol = new GhostSol();
+const ghostSol = new Zera();
 await ghostSol.init({
   wallet: yourWallet,
   cluster: 'devnet',
@@ -298,7 +298,7 @@ Enable debug logging by setting environment variables:
 
 ```bash
 # Enable debug logging
-export DEBUG=ghost-sol:*
+export DEBUG=zera:*
 
 # Run your application
 npm run dev

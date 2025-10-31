@@ -8,13 +8,13 @@
  * ZK Compression which only provides cost optimization.
  * 
  * Exports:
- * - GhostSolPrivacy - Main privacy class
+ * - ZeraPrivacy - Main privacy class
  * - Privacy configuration types
  * - Encrypted balance utilities
  * - Viewing key management
  */
 
-export { GhostSolPrivacy } from './ghost-sol-privacy';
+export { ZeraPrivacy } from './zera-privacy';
 export { ConfidentialTransferManager } from './confidential-transfer';
 export { EncryptionUtils } from './encryption';
 export { ViewingKeyManager, ViewingKeyConfig } from './viewing-keys';

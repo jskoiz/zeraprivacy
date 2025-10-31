@@ -1,6 +1,6 @@
-# GhostSol SDK Monitoring & Analytics
+# Zera SDK Monitoring & Analytics
 
-This document describes the monitoring, error tracking, and analytics capabilities of the GhostSol SDK.
+This document describes the monitoring, error tracking, and analytics capabilities of the Zera SDK.
 
 ## Table of Contents
 
@@ -23,7 +23,7 @@ This document describes the monitoring, error tracking, and analytics capabiliti
 
 ## Overview
 
-The GhostSol SDK includes built-in monitoring and analytics capabilities to help you:
+The Zera SDK includes built-in monitoring and analytics capabilities to help you:
 
 - **Track errors** in production and development
 - **Monitor performance** of SDK operations

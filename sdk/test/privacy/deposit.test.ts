@@ -16,7 +16,7 @@ import {
   PublicKey,
   clusterApiUrl
 } from '@solana/web3.js';
-import { GhostSolPrivacy } from '../../src/privacy/ghost-sol-privacy';
+import { ZeraPrivacy } from '../../src/privacy/zera-privacy';
 import { PrivacyConfig } from '../../src/privacy/types';
 import { ExtendedWalletAdapter } from '../../src/core/types';
 import { EncryptionUtils } from '../../src/privacy/encryption';
@@ -79,7 +79,7 @@ async function runTests() {
   console.log('📝 Test 1: Valid Deposit Operations');
   console.log('=====================================');
   try {
-    const privacySDK = new GhostSolPrivacy();
+    const privacySDK = new ZeraPrivacy();
     console.log('   🔧 Testing deposit with valid amount (0.1 SOL)...');
     
     try {
@@ -187,7 +187,7 @@ async function runTests() {
   console.log('=====================================');
   try {
     console.log('   🔧 Testing uninitialized SDK rejection...');
-    const privacySDK = new GhostSolPrivacy();
+    const privacySDK = new ZeraPrivacy();
     
     try {
       await privacySDK.encryptedDeposit(1 * LAMPORTS_PER_SOL);
@@ -212,7 +212,7 @@ async function runTests() {
   console.log('=====================================');
   try {
     console.log('   🔧 Testing privacy SDK initialization...');
-    const privacySDK = new GhostSolPrivacy();
+    const privacySDK = new ZeraPrivacy();
     
     try {
       await privacySDK.init(connection, wallet, privacyConfig);

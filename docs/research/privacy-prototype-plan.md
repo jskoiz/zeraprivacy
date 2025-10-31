@@ -54,7 +54,7 @@ interface PrivacyConfig {
   auditMode?: boolean;
 }
 
-class GhostSolPrivacy {
+class ZeraPrivacy {
   async createConfidentialMint(): Promise<PublicKey>;
   async createConfidentialAccount(mint: PublicKey): Promise<PublicKey>;
   async encryptedDeposit(amount: number): Promise<string>;
@@ -67,7 +67,7 @@ class GhostSolPrivacy {
 ### Phase 2: Integration with Existing SDK
 
 #### Dual-Mode Architecture
-Update existing GhostSol class to support both modes:
+Update existing Zera class to support both modes:
 
 ```typescript
 await init({

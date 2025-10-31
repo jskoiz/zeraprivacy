@@ -2,12 +2,12 @@
 
 ## 🎯 Overview
 
-This PR implements complete stealth address functionality for the GhostSol SDK, enabling fully unlinkable on-chain payments while maintaining recipient detectability. This feature is a critical privacy enhancement that prevents transaction graph analysis by ensuring each payment goes to a unique, unlinkable address.
+This PR implements complete stealth address functionality for the Zera SDK, enabling fully unlinkable on-chain payments while maintaining recipient detectability. This feature is a critical privacy enhancement that prevents transaction graph analysis by ensuring each payment goes to a unique, unlinkable address.
 
 ## ✅ Success Criteria - All Met
 
 - [x] Stealth address methods added to `sdk/src/index.ts`
-- [x] Stealth address methods added to `GhostSolPrivacy` class
+- [x] Stealth address methods added to `ZeraPrivacy` class
 - [x] Test file created: `sdk/test/e2e-stealth-addresses.test.ts`
 - [x] All test cases implemented (5 comprehensive tests)
 - [x] Test script added to package.json: `npm run test:e2e-stealth`
@@ -34,7 +34,7 @@ This PR implements complete stealth address functionality for the GhostSol SDK, 
 - `StealthAddressError`: Specialized error handling
 
 ### 3. Privacy Module Integration
-- **File**: `sdk/src/privacy/ghost-sol-privacy.ts` (+146 lines)
+- **File**: `sdk/src/privacy/zera-privacy.ts` (+146 lines)
 - Integrated `StealthAddressManager` into privacy SDK
 - Added 5 public methods:
   - `generateStealthMetaAddress()`
@@ -107,7 +107,7 @@ Test Coverage:     5 comprehensive E2E tests
 Breakdown by file:
 - stealth-address.ts:              377 lines (new)
 - e2e-stealth-addresses.test.ts:   485 lines (new)
-- ghost-sol-privacy.ts:            +146 lines
+- zera-privacy.ts:            +146 lines
 - types.ts:                        +88 lines
 - index.ts:                        +83 lines
 - errors.ts:                       +10 lines
@@ -147,17 +147,17 @@ npm run test:e2e-stealth
 
 ### Generate Stealth Meta-Address
 ```typescript
-import * as GhostSol from 'ghost-sol';
+import * as Zera from 'zera';
 
 // Initialize in privacy mode
-await GhostSol.init({
+await Zera.init({
   wallet: keypair,
   cluster: 'devnet',
   privacy: { mode: 'privacy' }
 });
 
 // Generate meta-address
-const metaAddress = GhostSol.generateStealthMetaAddress();
+const metaAddress = Zera.generateStealthMetaAddress();
 // Share metaAddress publicly
 ```
 
@@ -165,7 +165,7 @@ const metaAddress = GhostSol.generateStealthMetaAddress();
 ```typescript
 // Sender generates stealth address
 const { stealthAddress, ephemeralKey } = 
-  GhostSol.generateStealthAddress(recipientMetaAddress);
+  Zera.generateStealthAddress(recipientMetaAddress);
 
 // Send payment to stealthAddress.address
 // Publish ephemeralKey.publicKey alongside payment
@@ -175,7 +175,7 @@ const { stealthAddress, ephemeralKey } =
 ```typescript
 // Recipient scans for payments
 const ephemeralKeys = [...]; // Collect from blockchain
-const payments = await GhostSol.scanForPayments(
+const payments = await Zera.scanForPayments(
   myMetaAddress,
   myViewPrivateKey,
   ephemeralKeys
@@ -183,7 +183,7 @@ const payments = await GhostSol.scanForPayments(
 
 // Derive spending keys for detected payments
 for (const payment of payments) {
-  const spendingKey = GhostSol.deriveStealthSpendingKey(
+  const spendingKey = Zera.deriveStealthSpendingKey(
     payment,
     mySpendPrivateKey
   );

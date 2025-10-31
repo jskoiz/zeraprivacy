@@ -1,9 +1,9 @@
-# 🎉 Announcing Ghost Sol v1.0.0: Privacy for Solana, Simplified
+# 🎉 Announcing Zera v1.0.0: Privacy for Solana, Simplified
 
-**TL;DR**: Ghost Sol v1.0.0 is now live! Build privacy-preserving Solana applications with just three lines of code. Full stealth addresses, viewing keys, and ZK Compression support.
+**TL;DR**: Zera v1.0.0 is now live! Build privacy-preserving Solana applications with just three lines of code. Full stealth addresses, viewing keys, and ZK Compression support.
 
 ```bash
-npm install ghost-sol@1.0.0
+npm install zera@1.0.0
 ```
 
 ---
@@ -21,14 +21,14 @@ For many use cases—from payroll to personal finance to business operations—t
 
 ---
 
-## The Solution: Ghost Sol
+## The Solution: Zera
 
-Today, we're thrilled to announce **Ghost Sol v1.0.0**, the first stable release of our privacy-focused SDK for Solana developers.
+Today, we're thrilled to announce **Zera v1.0.0**, the first stable release of our privacy-focused SDK for Solana developers.
 
-Ghost Sol makes it **ridiculously easy** to add privacy to your Solana applications:
+Zera makes it **ridiculously easy** to add privacy to your Solana applications:
 
 ```typescript
-import { init, compress, transfer, decompress } from 'ghost-sol';
+import { init, compress, transfer, decompress } from 'zera';
 
 await init({ wallet, cluster: 'devnet' });
 
@@ -41,7 +41,7 @@ That's it. Three lines of code. Complete privacy.
 
 ---
 
-## What Makes Ghost Sol Special?
+## What Makes Zera Special?
 
 ### 1. **Simple API, Powerful Privacy**
 
@@ -86,10 +86,10 @@ const viewingKey = await generateViewingKey({
 Building a dApp? We've got you covered:
 
 ```tsx
-import { GhostSolProvider, useGhostSol } from 'ghost-sol/react';
+import { ZeraProvider, useZera } from 'zera/react';
 
 function PrivateWallet() {
-  const { compress, transfer, getBalance } = useGhostSol();
+  const { compress, transfer, getBalance } = useZera();
   
   return (
     <button onClick={() => transfer(address, amount)}>
@@ -130,7 +130,7 @@ Move large amounts without painting a target on your back.
 
 ## The Technology Stack
 
-Ghost Sol is built on proven technologies:
+Zera is built on proven technologies:
 
 ### ZK Compression (Light Protocol)
 - Zero-knowledge proofs for transaction privacy
@@ -178,13 +178,13 @@ From beta to stable, we've:
 ### 1. Install
 
 ```bash
-npm install ghost-sol
+npm install zera
 ```
 
 ### 2. Initialize
 
 ```typescript
-import { init } from 'ghost-sol';
+import { init } from 'zera';
 import { Keypair } from '@solana/web3.js';
 
 await init({
@@ -196,7 +196,7 @@ await init({
 ### 3. Use Privacy Features
 
 ```typescript
-import { compress, transfer, decompress } from 'ghost-sol';
+import { compress, transfer, decompress } from 'zera';
 
 // Shield SOL (compress into private balance)
 await compress(1.0);
@@ -211,7 +211,7 @@ await decompress(0.3);
 ### 4. Check Balance
 
 ```typescript
-import { getBalance } from 'ghost-sol';
+import { getBalance } from 'zera';
 
 const balance = await getBalance();
 console.log(`Private balance: ${balance / 1e9} SOL`);
@@ -267,7 +267,7 @@ We take security seriously:
 
 ---
 
-## Who Should Use Ghost Sol?
+## Who Should Use Zera?
 
 ### Perfect For:
 - 👨‍💻 **dApp Developers** adding privacy features
@@ -294,7 +294,7 @@ Want to understand how it works?
                │
                ▼
 ┌─────────────────────────────────────┐
-│         Ghost Sol SDK               │
+│         Zera SDK               │
 │  ┌──────────┐  ┌─────────────────┐ │
 │  │   Core   │  │  Privacy Layer  │ │
 │  └──────────┘  └─────────────────┘ │
@@ -356,7 +356,7 @@ Coming in v1.1.0 (Q1 2026).
 Yes! We use ZK Compression for transaction privacy and stealth addresses for receiver privacy.
 
 ### How much does it cost?
-Ghost Sol is free and open-source. Transaction fees are standard Solana network fees (very low).
+Zera is free and open-source. Transaction fees are standard Solana network fees (very low).
 
 ### Can I use it with React?
 Absolutely! We have first-class React support with hooks and providers.
@@ -370,15 +370,15 @@ We use audited @noble cryptography libraries. Full external audit planned for v1
 
 ```bash
 # Install
-npm install ghost-sol
+npm install zera
 
 # Start building
-import { init, compress, transfer } from 'ghost-sol';
+import { init, compress, transfer } from 'zera';
 ```
 
 **Documentation**: [github.com/jskoiz/ghostsol](https://github.com/jskoiz/ghostsol)
 
-**npm Package**: [npmjs.com/package/ghost-sol](https://www.npmjs.com/package/ghost-sol)
+**npm Package**: [npmjs.com/package/zera](https://www.npmjs.com/package/zera)
 
 ---
 
@@ -393,7 +393,7 @@ Let's build a more private, more secure blockchain future. Together.
 **Ready to add privacy to your Solana app?**
 
 ```bash
-npm install ghost-sol@1.0.0
+npm install zera@1.0.0
 ```
 
 🚀 **Let's make blockchain privacy accessible to everyone.**

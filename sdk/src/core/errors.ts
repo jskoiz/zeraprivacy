@@ -5,14 +5,14 @@
  * 
  * This module provides specific error types for different failure modes
  * in ZK Compression operations, enabling better error handling and
- * user-friendly error messages. All errors extend from a base GhostSolError
+ * user-friendly error messages. All errors extend from a base ZeraError
  * class that supports error codes and error chains.
  * 
  * Dependencies:
  * - None (pure TypeScript module)
  * 
  * Exports:
- * - GhostSolError - Base error class for all GhostSol errors
+ * - ZeraError - Base error class for all Zera errors
  * - CompressionError - Compression-specific failures
  * - TransferError - Transfer-specific failures
  * - DecompressionError - Decompression-specific failures
@@ -21,7 +21,7 @@
  */
 
 /**
- * Base error class for all GhostSol errors
+ * Base error class for all Zera errors
  * 
  * This class provides a foundation for all SDK errors, supporting:
  * - Error codes for programmatic error handling
@@ -29,11 +29,11 @@
  * - User-friendly error messages
  * 
  * @example
- * throw new GhostSolError('Operation failed', 'OPERATION_ERROR', originalError);
+ * throw new ZeraError('Operation failed', 'OPERATION_ERROR', originalError);
  */
-export class GhostSolError extends Error {
+export class ZeraError extends Error {
   /**
-   * Create a new GhostSol error
+   * Create a new Zera error
    * 
    * @param message - User-friendly error message
    * @param code - Error code for programmatic handling
@@ -45,11 +45,11 @@ export class GhostSolError extends Error {
     public cause?: Error
   ) {
     super(message);
-    this.name = 'GhostSolError';
+    this.name = 'ZeraError';
     
     // Maintain proper stack trace for where error was thrown (only available on V8)
     if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, GhostSolError);
+      Error.captureStackTrace(this, ZeraError);
     }
   }
 }
@@ -65,7 +65,7 @@ export class GhostSolError extends Error {
  * @example
  * throw new CompressionError('Failed to compress 1 SOL', originalError);
  */
-export class CompressionError extends GhostSolError {
+export class CompressionError extends ZeraError {
   /**
    * Create a new compression error
    * 
@@ -90,7 +90,7 @@ export class CompressionError extends GhostSolError {
  * @example
  * throw new TransferError('Recipient address is invalid', cause);
  */
-export class TransferError extends GhostSolError {
+export class TransferError extends ZeraError {
   /**
    * Create a new transfer error
    * 
@@ -115,7 +115,7 @@ export class TransferError extends GhostSolError {
  * @example
  * throw new DecompressionError('Failed to decompress 0.5 SOL', cause);
  */
-export class DecompressionError extends GhostSolError {
+export class DecompressionError extends ZeraError {
   /**
    * Create a new decompression error
    * 
@@ -140,7 +140,7 @@ export class DecompressionError extends GhostSolError {
  * @example
  * throw new RpcError('Failed to connect to RPC endpoint', cause);
  */
-export class RpcError extends GhostSolError {
+export class RpcError extends ZeraError {
   /**
    * Create a new RPC error
    * 
@@ -165,7 +165,7 @@ export class RpcError extends GhostSolError {
  * @example
  * throw new ValidationError('Amount must be greater than 0');
  */
-export class ValidationError extends GhostSolError {
+export class ValidationError extends ZeraError {
   /**
    * Create a new validation error
    * 

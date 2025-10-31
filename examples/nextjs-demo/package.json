@@ -15,7 +15,7 @@
     "@solana/wallet-adapter-react-ui": "^0.9.39",
     "@solana/wallet-adapter-wallets": "^0.19.37",
     "@solana/web3.js": "^1.98.4",
-    "ghost-sol": "file:../../sdk",
+    "zera": "file:../../sdk",
     "@noble/curves": "^1.4.0",
     "@noble/hashes": "^1.4.0",
     "next": "16.0.0",

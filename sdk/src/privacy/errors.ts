@@ -8,12 +8,12 @@
  * related to encryption, zero-knowledge proofs, and viewing keys.
  */
 
-import { GhostSolError } from '../core/errors';
+import { ZeraError } from '../core/errors';
 
 /**
  * Base error class for all privacy-related errors
  */
-export class PrivacyError extends GhostSolError {
+export class PrivacyError extends ZeraError {
   constructor(message: string, cause?: Error) {
     super(message, 'PRIVACY_ERROR', cause);
     this.name = 'PrivacyError';

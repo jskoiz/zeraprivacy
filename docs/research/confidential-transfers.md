@@ -611,7 +611,7 @@ import {
 } from '@solana/spl-token';
 
 // Drop-in replacement for GhostSOL token operations
-class GhostSolPrivacy {
+class ZeraPrivacy {
   async createConfidentialMint() {
     return createMint(
       this.connection,
@@ -919,7 +919,7 @@ await sendTransaction(encryptedInstruction);
 
 ```typescript
 // Phase 1: Maximum Reuse (2-3 weeks)
-class GhostSolPrivacy {
+class ZeraPrivacy {
   // ✅ Reuse: SPL Token 2022 confidential transfers
   async createConfidentialMint() { /* use official API */ }
   async depositConfidential() { /* use official API */ }
@@ -934,7 +934,7 @@ class GhostSolPrivacy {
 }
 
 // Phase 2: Custom Extensions (4-6 weeks)
-class GhostSolAdvancedPrivacy extends GhostSolPrivacy {
+class ZeraAdvancedPrivacy extends ZeraPrivacy {
   // 🔨 Build: Native SOL privacy
   async createSolPrivacyPool() { /* custom implementation */ }
   
@@ -1068,7 +1068,7 @@ await ghostSol.transferConfidential(recipient, 50); // Private transfer
 
 **Implementation:**
 ```typescript
-class GhostSolNativeSOL {
+class ZeraNativeSOL {
   async depositSOL(amount: number) {
     // 1. Auto-wrap SOL → wSOL
     const wsolAccount = await this.wrapSOL(amount);
@@ -1194,7 +1194,7 @@ const isValid = await verifyCustomProof(proof);
 
 ```typescript
 // Always support viewing keys (even in advanced features)
-class GhostSolPrivacy {
+class ZeraPrivacy {
   async init(config: {
     auditorKey?: PublicKey,  // Optional regulatory oversight
     autoApprove?: boolean     // For compliant institutions

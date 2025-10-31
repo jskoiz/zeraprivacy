@@ -101,15 +101,15 @@ From the comprehensive research review:
   - Balance commitment management
 
 **Week 2: Operations**
-- [ ] Implement `encryptedDeposit()` in `GhostSolPrivacy` class
+- [ ] Implement `encryptedDeposit()` in `ZeraPrivacy` class
   - Wrap deposit flow with ElGamal encryption
   - Generate range proofs for amounts
   - Apply pending balance operations
-- [ ] Implement `privateTransfer()` in `GhostSolPrivacy` class
+- [ ] Implement `privateTransfer()` in `ZeraPrivacy` class
   - Generate transfer proofs (validity + range)
   - Encrypt for sender, recipient, and auditor
   - Submit confidential transfer instruction
-- [ ] Implement `encryptedWithdraw()` in `GhostSolPrivacy` class
+- [ ] Implement `encryptedWithdraw()` in `ZeraPrivacy` class
   - Decrypt balance for withdrawal
   - Generate withdrawal proofs
   - Move from encrypted → regular balance

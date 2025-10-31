@@ -1,7 +1,7 @@
 {
-  "name": "ghost-sol",
+  "name": "zera",
   "version": "1.0.0",
-  "description": "Privacy SDK for Solana developers using ZK Compression",
+  "description": "Zera is a developer-first privacy SDK that makes private transactions simple",
   "workspaces": [
     "sdk",
     "examples/nextjs-demo"

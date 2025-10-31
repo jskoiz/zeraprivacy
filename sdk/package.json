@@ -1,7 +1,7 @@
 {
-  "name": "ghost-sol",
+  "name": "zera",
   "version": "1.0.0",
-  "description": "Privacy SDK for Solana developers using ZK Compression",
+  "description": "Zera is a developer-first privacy SDK that makes private transactions simple. With a clean API, developers can implement private SOL and SPL token transfers in just a few lines.",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -60,14 +60,14 @@
     "cryptocurrency",
     "blockchain"
   ],
-  "author": "Ghost Sol Team",
+  "author": "Zera Team",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jskoiz/ghostsol.git"
+    "url": "https://github.com/jskoiz/zera.git"
   },
   "bugs": {
-    "url": "https://github.com/jskoiz/ghostsol/issues"
+    "url": "https://github.com/jskoiz/zera/issues"
   },
-  "homepage": "https://github.com/jskoiz/ghostsol#readme"
+  "homepage": "https://github.com/jskoiz/zera#readme"
 }

@@ -479,10 +479,10 @@ _[JavaScript lacks secure memory primitives. Consider WebAssembly for key operat
 
 ### 5.2 Amount Validation
 
-**Files**: `sdk/src/core/ghost-sol.ts`, `sdk/src/privacy/encryption.ts`
+**Files**: `sdk/src/core/zera.ts`, `sdk/src/privacy/encryption.ts`
 
 - [ ] **Positive Amount**: Amount > 0 enforced
-  - Lines: ghost-sol.ts:256-258, 304-306, 355-357
+  - Lines: zera.ts:256-258, 304-306, 355-357
   - Check: ValidationError thrown ✅
   
 - [ ] **Integer Amount**: No fractional lamports

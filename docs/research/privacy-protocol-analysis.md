@@ -2,7 +2,7 @@
 
 ## Research Status: In Progress
 
-Based on research into existing privacy protocols on Solana, here's an analysis of integration options for achieving true privacy in GhostSol.
+Based on research into existing privacy protocols on Solana, here's an analysis of integration options for achieving true privacy in Zera.
 
 ## Option 1: SPL Token 2022 Confidential Transfers (RECOMMENDED)
 

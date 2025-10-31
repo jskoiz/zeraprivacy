@@ -221,11 +221,11 @@ Implement the encrypted deposit operation that allows users to shield SOL into a
 
 ## What to Build
 
-### 1. Update `sdk/src/privacy/ghost-sol-privacy.ts`
+### 1. Update `sdk/src/privacy/zera-privacy.ts`
 Implement the `encryptedDeposit()` method:
 
 ```typescript
-class GhostSolPrivacy {
+class ZeraPrivacy {
   async encryptedDeposit(amountLamports: number): Promise<string> {
     // 1. Get or create confidential account
     // 2. Encrypt the deposit amount
@@ -326,11 +326,11 @@ Implement private transfer operation that allows encrypted transfers between con
 
 ## What to Build
 
-### 1. Update `sdk/src/privacy/ghost-sol-privacy.ts`
+### 1. Update `sdk/src/privacy/zera-privacy.ts`
 Implement the `privateTransfer()` method:
 
 ```typescript
-class GhostSolPrivacy {
+class ZeraPrivacy {
   async privateTransfer(
     recipientAddress: string,
     amountLamports: number
@@ -446,11 +446,11 @@ Implement encrypted withdrawal operation that allows users to unshield from conf
 
 ## What to Build
 
-### 1. Update `sdk/src/privacy/ghost-sol-privacy.ts`
+### 1. Update `sdk/src/privacy/zera-privacy.ts`
 Implement the `encryptedWithdraw()` method:
 
 ```typescript
-class GhostSolPrivacy {
+class ZeraPrivacy {
   async encryptedWithdraw(
     amountLamports: number,
     destination?: PublicKey
@@ -603,11 +603,11 @@ interface ViewingKeyConfig {
 }
 ```
 
-### 2. Update `sdk/src/privacy/ghost-sol-privacy.ts`
+### 2. Update `sdk/src/privacy/zera-privacy.ts`
 Add viewing key methods to main privacy class:
 
 ```typescript
-class GhostSolPrivacy {
+class ZeraPrivacy {
   // Generate viewing key for current user
   async generateViewingKey(config?: ViewingKeyConfig): Promise<ViewingKey>
   
@@ -1482,11 +1482,11 @@ Integrate wSOL wrapper into privacy operations (deposit/withdraw) so users can u
 
 ## What to Build
 
-### 1. Update `sdk/src/privacy/ghost-sol-privacy.ts`
+### 1. Update `sdk/src/privacy/zera-privacy.ts`
 Integrate wSOL into deposit/withdraw:
 
 ```typescript
-class GhostSolPrivacy {
+class ZeraPrivacy {
   private wsolWrapper: WsolWrapper;
   
   async encryptedDeposit(amountLamports: number): Promise<string> {
@@ -2006,11 +2006,11 @@ class PaymentScanner {
 }
 ```
 
-### 2. Integration with GhostSolPrivacy
-**Update**: `sdk/src/privacy/ghost-sol-privacy.ts`
+### 2. Integration with ZeraPrivacy
+**Update**: `sdk/src/privacy/zera-privacy.ts`
 
 ```typescript
-class GhostSolPrivacy {
+class ZeraPrivacy {
   private paymentScanner?: PaymentScanner;
   
   // Enable automatic payment scanning

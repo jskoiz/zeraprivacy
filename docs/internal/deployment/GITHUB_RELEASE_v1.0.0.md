@@ -1,16 +1,16 @@
-# Ghost Sol SDK v1.0.0 - Stable Release
+# Zera SDK v1.0.0 - Stable Release
 
 ## 🎉 First Stable Release!
 
-We're thrilled to announce the first stable release of **Ghost Sol SDK** - a privacy-focused SDK for building applications on Solana with ZK Compression!
+We're thrilled to announce the first stable release of **Zera SDK** - a privacy-focused SDK for building applications on Solana with ZK Compression!
 
-After months of development and extensive testing through our beta program, Ghost Sol v1.0.0 is production-ready for developers who want to build privacy-preserving applications on Solana.
+After months of development and extensive testing through our beta program, Zera v1.0.0 is production-ready for developers who want to build privacy-preserving applications on Solana.
 
 ---
 
-## 🚀 What is Ghost Sol?
+## 🚀 What is Zera?
 
-Ghost Sol is a TypeScript SDK that brings advanced privacy features to Solana applications through:
+Zera is a TypeScript SDK that brings advanced privacy features to Solana applications through:
 
 - **ZK Compression**: Private transactions using Light Protocol's ZK Compression
 - **Stealth Addresses**: Unlinkable one-time payment addresses for complete transaction privacy
@@ -45,7 +45,7 @@ Ghost Sol is a TypeScript SDK that brings advanced privacy features to Solana ap
 ## 📦 Installation
 
 ```bash
-npm install ghost-sol@1.0.0
+npm install zera@1.0.0
 ```
 
 ---
@@ -54,7 +54,7 @@ npm install ghost-sol@1.0.0
 
 ### Node.js
 ```typescript
-import { init, compress, transfer, decompress } from 'ghost-sol';
+import { init, compress, transfer, decompress } from 'zera';
 import { Keypair } from '@solana/web3.js';
 
 const keypair = Keypair.generate();
@@ -72,34 +72,34 @@ await decompress(0.3);                  // Unshield to public
 
 ### React
 ```tsx
-import { GhostSolProvider, useGhostSol } from 'ghost-sol/react';
+import { ZeraProvider, useZera } from 'zera/react';
 
 function App() {
   return (
-    <GhostSolProvider cluster="devnet">
+    <ZeraProvider cluster="devnet">
       <PrivateTransfer />
-    </GhostSolProvider>
+    </ZeraProvider>
   );
 }
 
 function PrivateTransfer() {
-  const { compress, transfer, decompress, getBalance } = useGhostSol();
+  const { compress, transfer, decompress, getBalance } = useZera();
   // Use privacy features with automatic state management
 }
 ```
 
 ### Stealth Addresses
 ```typescript
-import * as GhostSol from 'ghost-sol';
+import * as Zera from 'zera';
 
 // Generate meta-address for receiving payments
-const metaAddress = GhostSol.generateStealthMetaAddress();
+const metaAddress = Zera.generateStealthMetaAddress();
 
 // Create one-time payment address
-const { stealthAddress } = GhostSol.generateStealthAddress(recipientMetaAddress);
+const { stealthAddress } = Zera.generateStealthAddress(recipientMetaAddress);
 
 // Scan for incoming payments
-const payments = await GhostSol.scanBlockchainForPayments(
+const payments = await Zera.scanBlockchainForPayments(
   metaAddress,
   viewPrivateKey
 );
@@ -215,7 +215,7 @@ Special thanks to:
 ## 🔗 Links
 
 - **GitHub**: https://github.com/jskoiz/ghostsol
-- **npm Package**: https://www.npmjs.com/package/ghost-sol
+- **npm Package**: https://www.npmjs.com/package/zera
 - **Documentation**: https://github.com/jskoiz/ghostsol#readme
 - **Issues**: https://github.com/jskoiz/ghostsol/issues
 - **Discussions**: https://github.com/jskoiz/ghostsol/discussions
@@ -241,7 +241,7 @@ MIT License - see [LICENSE](https://github.com/jskoiz/ghostsol/blob/main/LICENSE
 **Ready to build privacy-preserving applications on Solana?**
 
 ```bash
-npm install ghost-sol@1.0.0
+npm install zera@1.0.0
 ```
 
 Let's make blockchain privacy accessible to everyone! 🚀🔒

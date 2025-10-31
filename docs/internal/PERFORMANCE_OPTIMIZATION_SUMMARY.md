@@ -213,9 +213,9 @@ export { BlockchainScanner, ScannerConfig, ScanResult };
 ### Automatic Optimization (No Code Changes Required)
 
 ```typescript
-import { GhostSolSDK } from '@ghostsol/sdk';
+import { ZeraSDK } from '@ghostsol/sdk';
 
-const sdk = new GhostSolSDK({ 
+const sdk = new ZeraSDK({ 
   cluster: 'devnet',
   wallet: walletAdapter 
 });

@@ -4,7 +4,7 @@
  * Simple test to verify all stealth address APIs are exported
  */
 
-import * as GhostSol from '../src/index';
+import * as Zera from '../src/index';
 
 const colors = {
   reset: '\x1b[0m',
@@ -35,7 +35,7 @@ log('\nChecking main SDK exports:', 'cyan');
 let allExported = true;
 
 for (const api of requiredAPIs) {
-  const isExported = typeof (GhostSol as any)[api] === 'function';
+  const isExported = typeof (Zera as any)[api] === 'function';
   const status = isExported ? '✅' : '❌';
   const color = isExported ? 'green' : 'red';
   log(`  ${status} ${api}`, color);

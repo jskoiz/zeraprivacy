@@ -1,8 +1,8 @@
 /**
- * Example: Using Monitoring and Analytics with GhostSol SDK
+ * Example: Using Monitoring and Analytics with Zera SDK
  * 
  * This example demonstrates how to set up and use the monitoring
- * and analytics features of the GhostSol SDK.
+ * and analytics features of the Zera SDK.
  */
 
 import { 

@@ -1,4 +1,4 @@
-# Ghost Sol Demo
+# Zera Demo
 
 A Next.js demo application showcasing private SOL swaps on Solana using ZK Compression technology.
 
@@ -60,7 +60,7 @@ Unshield compressed SOL back to a regular Solana account, making it visible on t
 - **Framework**: Next.js 14 with App Router
 - **Styling**: Tailwind CSS
 - **Wallet Integration**: @solana/wallet-adapter-react
-- **SDK**: ghost-sol (local package)
+- **SDK**: zera (local package)
 - **Network**: Solana Devnet
 - **Privacy Technology**: ZK Compression by Light Protocol
 
@@ -109,7 +109,7 @@ src/
 No environment variables are required for the demo. The app uses:
 - Solana devnet RPC endpoint
 - Public wallet adapter configuration
-- Local ghost-sol SDK package
+- Local zera SDK package
 
 ## Learn More
 

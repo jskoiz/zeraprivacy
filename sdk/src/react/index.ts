@@ -1,24 +1,24 @@
 /**
  * index.ts
  * 
- * Purpose: Export React components and hooks for GhostSol SDK
+ * Purpose: Export React components and hooks for Zera SDK
  * 
  * Dependencies:
- * - GhostSolProvider component
- * - useGhostSol hook
+ * - ZeraProvider component
+ * - useZera hook
  * 
  * Exports:
- * - GhostSolProvider - React context provider component
- * - useGhostSol - Hook to access GhostSol context
+ * - ZeraProvider - React context provider component
+ * - useZera - Hook to access Zera context
  */
 
-export { GhostSolProvider } from './GhostSolProvider';
-export { useGhostSol } from './useGhostSol';
+export { ZeraProvider } from './ZeraProvider';
+export { useZera } from './useZera';
 
 // Re-export types for convenience
-export type { WalletAdapter, ExtendedWalletAdapter, GhostSolConfig, TransferResult, CompressedBalance } from '../core/types';
+export type { WalletAdapter, ExtendedWalletAdapter, ZeraConfig, TransferResult, CompressedBalance } from '../core/types';
 export { 
-  GhostSolError, 
+  ZeraError, 
   CompressionError, 
   TransferError, 
   DecompressionError,

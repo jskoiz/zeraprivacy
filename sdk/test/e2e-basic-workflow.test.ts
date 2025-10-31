@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 
 /**
- * E2E Basic Workflow Test Suite for GhostSol SDK
+ * E2E Basic Workflow Test Suite for Zera SDK
  * 
  * This test suite validates the complete basic privacy workflow:
  * 1. Native SOL deposit (compression) with automatic wSOL wrapping
@@ -21,7 +21,7 @@
  */
 
 import { Keypair, PublicKey, Connection, LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { GhostSol } from '../src/core/ghost-sol';
+import { Zera } from '../src/core/zera';
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
 
 // Test configuration
@@ -127,7 +127,7 @@ function validateMessageTerminology(message: string): boolean {
 /**
  * Test 1: Deposit native SOL with automatic wSOL wrapping
  */
-async function testDepositWithWrapping(ghostSol: GhostSol, connection: Connection, wallet: Keypair) {
+async function testDepositWithWrapping(ghostSol: Zera, connection: Connection, wallet: Keypair) {
   logStep('Test 1: Deposit native SOL and wrap to wSOL automatically');
   
   try {
@@ -205,7 +205,7 @@ async function testDepositWithWrapping(ghostSol: GhostSol, connection: Connectio
 /**
  * Test 2: Withdraw native SOL with automatic wSOL unwrapping
  */
-async function testWithdrawWithUnwrapping(ghostSol: GhostSol, connection: Connection, wallet: Keypair) {
+async function testWithdrawWithUnwrapping(ghostSol: Zera, connection: Connection, wallet: Keypair) {
   logStep('Test 2: Withdraw native SOL and unwrap from wSOL automatically');
   
   try {
@@ -288,7 +288,7 @@ async function testWithdrawWithUnwrapping(ghostSol: GhostSol, connection: Connec
 /**
  * Test 3: Encrypt and decrypt balances correctly
  */
-async function testBalanceEncryptionDecryption(ghostSol: GhostSol) {
+async function testBalanceEncryptionDecryption(ghostSol: Zera) {
   logStep('Test 3: Encrypt and decrypt balances correctly');
   
   try {
@@ -344,7 +344,7 @@ async function testBalanceEncryptionDecryption(ghostSol: GhostSol) {
 /**
  * Test 4: Verify no orphaned wSOL accounts are created
  */
-async function testNoOrphanedAccounts(ghostSol: GhostSol, connection: Connection, wallet: Keypair) {
+async function testNoOrphanedAccounts(ghostSol: Zera, connection: Connection, wallet: Keypair) {
   logStep('Test 4: Verify no orphaned wSOL accounts created');
   
   try {
@@ -480,7 +480,7 @@ async function testSOLTerminologyOnly() {
  * Main test runner
  */
 async function runE2EBasicWorkflowTests() {
-  log('\n🚀 Starting GhostSol E2E Basic Workflow Tests', 'bright');
+  log('\n🚀 Starting Zera E2E Basic Workflow Tests', 'bright');
   log('='.repeat(80), 'cyan');
   
   const testResults: { [key: string]: boolean } = {};
@@ -495,8 +495,8 @@ async function runE2EBasicWorkflowTests() {
     logInfo(`Test wallet: ${wallet.publicKey.toBase58()}`);
     logInfo(`RPC endpoint: ${DEVNET_RPC}`);
     
-    // Initialize GhostSol SDK
-    const ghostSol = new GhostSol();
+    // Initialize Zera SDK
+    const ghostSol = new Zera();
     await ghostSol.init({
       wallet,
       cluster: 'devnet',

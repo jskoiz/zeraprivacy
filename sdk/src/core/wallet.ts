@@ -25,7 +25,7 @@ import { WalletAdapter, ExtendedWalletAdapter } from './types';
  * 
  * @param wallet - The wallet to normalize (Keypair, wallet adapter, or undefined)
  * @returns Normalized ExtendedWalletAdapter interface with raw Keypair access
- * @throws GhostSolError if wallet type is unsupported or invalid
+ * @throws ZeraError if wallet type is unsupported or invalid
  */
 export function normalizeWallet(wallet?: Keypair | WalletAdapter): ExtendedWalletAdapter {
   // Handle undefined wallet (CLI environment)

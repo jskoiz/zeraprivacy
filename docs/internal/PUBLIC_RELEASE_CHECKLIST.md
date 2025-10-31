@@ -1,6 +1,6 @@
 # Public Release Checklist
 
-This document confirms that the Ghost Sol SDK repository has been prepared for public release.
+This document confirms that the Zera SDK repository has been prepared for public release.
 
 **Date**: 2025-10-31  
 **Branch**: `cursor/prepare-main-branch-for-public-release-7f27`  

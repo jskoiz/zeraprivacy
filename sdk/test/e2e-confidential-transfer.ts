@@ -9,7 +9,7 @@
  */
 
 import { Connection, Keypair, clusterApiUrl } from '@solana/web3.js';
-import { GhostSolPrivacy } from '../src/privacy/ghost-sol-privacy';
+import { ZeraPrivacy } from '../src/privacy/zera-privacy';
 import { ExtendedWalletAdapter } from '../src/core/types';
 
 // Colors for output
@@ -51,11 +51,11 @@ async function main() {
   const senderWallet = new LocalWallet(sender);
   const recipientWallet = new LocalWallet(recipient);
 
-  // Test 1: Verify GhostSolPrivacy can be instantiated
-  log('\nTest 1: GhostSolPrivacy instantiation', 'cyan');
+  // Test 1: Verify ZeraPrivacy can be instantiated
+  log('\nTest 1: ZeraPrivacy instantiation', 'cyan');
   try {
-    const privacy = new GhostSolPrivacy();
-    log('✅ GhostSolPrivacy instantiated successfully', 'green');
+    const privacy = new ZeraPrivacy();
+    log('✅ ZeraPrivacy instantiated successfully', 'green');
   } catch (error) {
     log(`❌ Failed to instantiate: ${error}`, 'yellow');
     process.exit(1);
@@ -64,7 +64,7 @@ async function main() {
   // Test 2: Verify privacy SDK initialization (expected to fail without blockchain setup)
   log('\nTest 2: Privacy SDK initialization', 'cyan');
   try {
-    const privacy = new GhostSolPrivacy();
+    const privacy = new ZeraPrivacy();
     await privacy.init(connection, senderWallet, {
       mode: 'privacy',
       enableViewingKeys: true,
@@ -79,7 +79,7 @@ async function main() {
 
   // Test 3: Verify confidential transfer APIs exist
   log('\nTest 3: Verify confidential transfer APIs', 'cyan');
-  const privacy = new GhostSolPrivacy();
+  const privacy = new ZeraPrivacy();
   
   const requiredMethods = [
     'init',
@@ -110,7 +110,7 @@ async function main() {
   }
 
   log('\n=== Summary ===', 'cyan');
-  log('✅ GhostSolPrivacy API structure is correct', 'green');
+  log('✅ ZeraPrivacy API structure is correct', 'green');
   log('✅ All required methods are present', 'green');
   log('⚠️  Full blockchain integration pending SPL Token 2022', 'yellow');
   log('\n📝 Note: Complete confidential transfers require:', 'reset');

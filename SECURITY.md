@@ -2,7 +2,7 @@
 
 ## Security Status
 
-⚠️ **BETA SOFTWARE**: Ghost Sol SDK is currently in public beta (v0.1.0-beta). This software has **NOT been professionally audited** and is **NOT recommended for production use with real funds**.
+⚠️ **BETA SOFTWARE**: Zera SDK is currently in public beta (v0.1.0-beta). This software has **NOT been professionally audited** and is **NOT recommended for production use with real funds**.
 
 ### Current Security Status
 
@@ -179,7 +179,7 @@ Comprehensive security documentation is available for auditors and security rese
 
 ## Compliance and Privacy
 
-Ghost Sol SDK is designed with privacy-preserving features while maintaining regulatory compatibility:
+Zera SDK is designed with privacy-preserving features while maintaining regulatory compatibility:
 
 - **Viewing Keys**: Allow selective disclosure for compliance and auditing
 - **Stealth Addresses**: Provide transaction privacy while maintaining auditability

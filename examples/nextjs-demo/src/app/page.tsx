@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { PublicKey } from '@solana/web3.js'
-import { GhostSolProvider, useGhostSol } from 'ghost-sol/react'
+import { ZeraProvider, useZera } from 'zera/react'
 import dynamic from 'next/dynamic'
 
 // Dynamically import WalletMultiButton to prevent hydration issues
@@ -33,7 +33,7 @@ function DashboardContent() {
     loading, 
     error,
     refresh
-  } = useGhostSol()
+  } = useZera()
   
   const [transactionLog, setTransactionLog] = useState<TransactionLog[]>([])
   const [transferAmount, setTransferAmount] = useState('0.01')
@@ -402,7 +402,7 @@ export default function Dashboard() {
   }
 
   return (
-    <GhostSolProvider 
+    <ZeraProvider 
       wallet={{
         publicKey: wallet.publicKey!,
         signTransaction: wallet.signTransaction! as any,
@@ -411,6 +411,6 @@ export default function Dashboard() {
       cluster="devnet"
     >
       <DashboardContent />
-    </GhostSolProvider>
+    </ZeraProvider>
   )
 }

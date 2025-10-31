@@ -1,6 +1,6 @@
-# Ghost Sol SDK Documentation
+# Zera SDK Documentation
 
-Welcome to the Ghost Sol SDK documentation! This directory contains comprehensive documentation for developers, security researchers, and contributors.
+Welcome to the Zera SDK documentation! This directory contains comprehensive documentation for developers, security researchers, and contributors.
 
 ## 📖 Quick Links
 
@@ -14,7 +14,7 @@ Welcome to the Ghost Sol SDK documentation! This directory contains comprehensiv
 
 ### 🚀 Getting Started
 
-- **[Quick Start Guide](./guides/QUICK_START_GUIDE_FOR_TEAM.md)** - Get started with Ghost Sol SDK
+- **[Quick Start Guide](./guides/QUICK_START_GUIDE_FOR_TEAM.md)** - Get started with Zera SDK
 - **[Setup Guide](./SETUP.md)** - Detailed setup instructions
 - **[API Documentation](./API.md)** - Complete API reference
 - **[SDK README](../sdk/README.md)** - SDK-specific documentation
@@ -55,7 +55,7 @@ Welcome to the Ghost Sol SDK documentation! This directory contains comprehensiv
 
 ### I want to...
 
-#### Build an App with Ghost Sol SDK
+#### Build an App with Zera SDK
 1. Read the [Main README](../README.md)
 2. Follow the [Quick Start Guide](./guides/QUICK_START_GUIDE_FOR_TEAM.md)
 3. Check the [API Documentation](./API.md)

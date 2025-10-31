@@ -1,6 +1,6 @@
-# Ghost Sol SDK
+# Zera SDK
 
-A privacy-focused SDK for SOL developers using ZK Compression technology.
+Zera is a developer-first privacy SDK that makes private transactions simple. With a clean API, developers can implement private SOL and SPL token transfers in just a few lines.
 
 ## 🎉 Beta Status
 
@@ -27,7 +27,7 @@ A privacy-focused SDK for SOL developers using ZK Compression technology.
 
 ## Overview
 
-Ghost Sol SDK provides a simple interface for private SOL transfers using ZK Compression. The SDK wraps the ZK Compression APIs into easy-to-use functions that developers can integrate into their applications.
+Zera provides a simple interface for private SOL and SPL token transfers using ZK Compression technology. The SDK wraps the ZK Compression APIs into easy-to-use functions that developers can integrate into their applications.
 
 ## Features
 
@@ -44,10 +44,10 @@ Ghost Sol SDK provides a simple interface for private SOL transfers using ZK Com
 
 ```bash
 # Install the latest beta version
-npm install ghost-sol@0.1.0-beta
+npm install zera@0.1.0-beta
 
 # Or use the beta tag
-npm install ghost-sol@beta
+npm install zera@beta
 ```
 
 ### Beta Release (Latest Features)
@@ -55,13 +55,13 @@ npm install ghost-sol@beta
 To install the latest beta version with cutting-edge features:
 
 ```bash
-npm install ghost-sol@beta
+npm install zera@beta
 ```
 
 Or install a specific beta version:
 
 ```bash
-npm install ghost-sol@0.1.0-beta.0
+npm install zera@0.1.0-beta.0
 ```
 
 > **Note**: Beta releases may contain experimental features and are recommended for testing and development purposes.
@@ -70,7 +70,7 @@ npm install ghost-sol@0.1.0-beta.0
 ```json
 {
   "dependencies": {
-    "ghost-sol": "0.1.0-beta"
+    "zera": "0.1.0-beta"
   }
 }
 ```
@@ -87,7 +87,7 @@ npm install ghost-sol@0.1.0-beta.0
 ### Node.js Usage
 
 ```typescript
-import { init, getAddress, getBalance, compress, transfer, decompress } from 'ghost-sol';
+import { init, getAddress, getBalance, compress, transfer, decompress } from 'zera';
 import { Keypair } from '@solana/web3.js';
 
 // Generate a test keypair
@@ -125,7 +125,7 @@ console.log('Decompress signature:', decompressSignature);
 ### React Usage
 
 ```tsx
-import { GhostSolProvider, useGhostSol } from 'ghost-sol/react';
+import { ZeraProvider, useZera } from 'zera/react';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
 import { PhantomWalletAdapter } from '@solana/wallet-adapter-wallets';
@@ -137,16 +137,16 @@ function App() {
   return (
     <ConnectionProvider endpoint="https://api.devnet.solana.com">
       <WalletProvider wallets={wallets} autoConnect>
-        <GhostSolProvider cluster={network}>
+        <ZeraProvider cluster={network}>
           <WalletButton />
-        </GhostSolProvider>
+        </ZeraProvider>
       </WalletProvider>
     </ConnectionProvider>
   );
 }
 
 function WalletButton() {
-  const { address, balance, compress, transfer, decompress, loading, error } = useGhostSol();
+  const { address, balance, compress, transfer, decompress, loading, error } = useZera();
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
@@ -166,7 +166,7 @@ function WalletButton() {
 
 ### Core Functions
 
-#### `init(config: GhostSolConfig)`
+#### `init(config: ZeraConfig)`
 Initialize the SDK with configuration options.
 
 **Parameters:**
@@ -241,12 +241,12 @@ The SDK is built with modularity and maintainability in mind:
 - **`wallet.ts`** - Wallet normalization utilities
 - **`rpc.ts`** - ZK Compression RPC initialization
 - **`relayer.ts`** - TestRelayer implementation for fee payment
-- **`ghost-sol.ts`** - Main SDK class implementation
+- **`zera.ts`** - Main SDK class implementation
 
 ### React Integration
 
-- **`GhostSolProvider.tsx`** - React context provider
-- **`useGhostSol.ts`** - React hook for context access
+- **`ZeraProvider.tsx`** - React context provider
+- **`useZera.ts`** - React hook for context access
 
 ## Beta Release Features
 
@@ -273,8 +273,8 @@ The SDK is built with modularity and maintainability in mind:
 - Revocation support
 
 #### React Integration
-- `GhostSolProvider` context provider
-- `useGhostSol()` hook for easy access
+- `ZeraProvider` context provider
+- `useZera()` hook for easy access
 - Browser wallet adapter support
 - State management and error handling
 
@@ -473,7 +473,7 @@ Comprehensive security documentation is available for auditors and security rese
 If you discover a security vulnerability, please report it responsibly:
 
 1. **DO NOT** open a public GitHub issue
-2. Use GitHub Security Advisories (preferred): [Report a vulnerability](https://github.com/jskoiz/ghostsol/security/advisories/new)
+2. Use GitHub Security Advisories (preferred): [Report a vulnerability](https://github.com/jskoiz/zera/security/advisories/new)
 3. Or email security contact: [To be added]
 4. Include detailed description and reproduction steps
 5. Allow time for us to fix before public disclosure
@@ -527,7 +527,7 @@ MIT License - see LICENSE file for details.
 - **GitHub Issues**: Bug reports and feature requests
 - **GitHub Discussions**: Questions and community support
 - **Discord**: [Join our Discord] (coming soon)
-- **Twitter**: [@ghostsol] (coming soon)
+- **Twitter**: [@zera] (coming soon)
 
 ## 🙏 Acknowledgments
 

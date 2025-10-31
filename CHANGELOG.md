@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to the Ghost Sol SDK will be documented in this file.
+All notable changes to the Zera SDK will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🎉 STABLE v1.0.0 RELEASE
 
-This is the first stable release of Ghost Sol SDK! After extensive testing and refinement through our beta program, we're proud to announce that Ghost Sol is production-ready for building privacy-focused applications on Solana.
+This is the first stable release of Zera SDK! After extensive testing and refinement through our beta program, we're proud to announce that Zera is production-ready for building privacy-focused applications on Solana.
 
 ### 🚀 What's New in v1.0.0
 
@@ -36,8 +36,8 @@ This is the first stable release of Ghost Sol SDK! After extensive testing and r
 - **Analytics**: Opt-in usage analytics for feature adoption insights
 
 #### React Integration
-- **GhostSolProvider**: Context provider for managing SDK state
-- **useGhostSol Hook**: React hook with automatic state management
+- **ZeraProvider**: Context provider for managing SDK state
+- **useZera Hook**: React hook with automatic state management
 - **Wallet Adapters**: Full support for Phantom and other Solana wallets
 - **Demo App**: Production-ready Next.js demo showcasing all features
 
@@ -71,12 +71,12 @@ This is the first stable release of Ghost Sol SDK! After extensive testing and r
 
 #### Installation
 ```bash
-npm install ghost-sol@1.0.0
+npm install zera@1.0.0
 ```
 
 #### Package Exports
-- **Main**: `ghost-sol` - Core SDK functionality
-- **React**: `ghost-sol/react` - React integration
+- **Main**: `zera` - Core SDK functionality
+- **React**: `zera/react` - React integration
 - **Formats**: CommonJS (CJS), ES Modules (ESM), TypeScript definitions (DTS)
 
 #### Dependencies
@@ -129,7 +129,7 @@ The API remains stable from beta, but we've fixed several bugs:
 3. **Analytics**: Timer types are now cross-platform compatible
 
 #### Recommended Actions
-1. Update package version: `npm install ghost-sol@1.0.0`
+1. Update package version: `npm install zera@1.0.0`
 2. Rebuild your project: `npm run build`
 3. Re-run tests to ensure compatibility
 4. Review documentation for any new features
@@ -176,7 +176,7 @@ Special thanks to:
 
 ### 🎉 Initial Beta Release
 
-This is the first public beta release of Ghost Sol SDK, a privacy-focused SDK for Solana developers using ZK Compression and confidential transfer technologies.
+This is the first public beta release of Zera SDK, a privacy-focused SDK for Solana developers using ZK Compression and confidential transfer technologies.
 
 ### ✅ What Works in Beta
 
@@ -195,8 +195,8 @@ This is the first public beta release of Ghost Sol SDK, a privacy-focused SDK fo
 - **Modular Architecture**: Well-organized codebase with clear separation of concerns
 
 #### React Integration
-- **GhostSolProvider**: Context provider for managing SDK state in React applications
-- **useGhostSol Hook**: React hook for accessing privacy features
+- **ZeraProvider**: Context provider for managing SDK state in React applications
+- **useZera Hook**: React hook for accessing privacy features
 - **Browser Wallet Support**: Integration with Phantom and other Solana wallet adapters
 - **Next.js Demo**: Complete demo application showcasing all features
 
@@ -248,14 +248,14 @@ This is the first public beta release of Ghost Sol SDK, a privacy-focused SDK fo
 ### 📦 Installation
 
 ```bash
-npm install ghost-sol@0.1.0-beta
+npm install zera@0.1.0-beta
 ```
 
 ### 🚀 Quick Start
 
 #### Basic Usage (Node.js)
 ```typescript
-import { init, compress, transfer, decompress } from 'ghost-sol';
+import { init, compress, transfer, decompress } from 'zera';
 import { Keypair } from '@solana/web3.js';
 
 const keypair = Keypair.generate();
@@ -273,41 +273,41 @@ await decompress(0.3);                        // Unshield to public
 
 #### React Integration
 ```tsx
-import { GhostSolProvider, useGhostSol } from 'ghost-sol/react';
+import { ZeraProvider, useZera } from 'zera/react';
 
 function App() {
   return (
-    <GhostSolProvider cluster="devnet">
+    <ZeraProvider cluster="devnet">
       <YourComponent />
-    </GhostSolProvider>
+    </ZeraProvider>
   );
 }
 
 function YourComponent() {
-  const { compress, transfer, decompress } = useGhostSol();
+  const { compress, transfer, decompress } = useZera();
   // Use privacy features
 }
 ```
 
 #### Stealth Addresses
 ```typescript
-import * as GhostSol from 'ghost-sol';
+import * as Zera from 'zera';
 
-await GhostSol.init({
+await Zera.init({
   wallet: keypair,
   cluster: 'devnet',
   privacy: { mode: 'privacy' }
 });
 
 // Generate meta-address for receiving
-const metaAddress = GhostSol.generateStealthMetaAddress();
+const metaAddress = Zera.generateStealthMetaAddress();
 
 // Create one-time payment address
 const { stealthAddress, ephemeralKey } = 
-  GhostSol.generateStealthAddress(recipientMetaAddress);
+  Zera.generateStealthAddress(recipientMetaAddress);
 
 // Scan for payments
-const payments = await GhostSol.scanBlockchainForPayments(
+const payments = await Zera.scanBlockchainForPayments(
   metaAddress, 
   viewPrivateKey
 );
@@ -316,16 +316,16 @@ const payments = await GhostSol.scanBlockchainForPayments(
 #### Viewing Keys (Compliance)
 ```typescript
 // Generate viewing key for auditor
-const viewingKey = await GhostSol.generateViewingKey({
+const viewingKey = await Zera.generateViewingKey({
   permissions: ['balance_view'],
   expiresAt: Date.now() + 86400000 // 24 hours
 });
 
 // Auditor decrypts balance
-const balance = await GhostSol.decryptBalance(viewingKey);
+const balance = await Zera.decryptBalance(viewingKey);
 
 // Revoke access
-await GhostSol.revokeViewingKey(viewingKey.id);
+await Zera.revokeViewingKey(viewingKey.id);
 ```
 
 ### 🔮 Coming Soon (v0.2.0)

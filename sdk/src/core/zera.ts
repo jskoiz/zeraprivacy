@@ -1,5 +1,5 @@
 /**
- * ghost-sol.ts
+ * zera.ts
  * 
  * Purpose: Main SDK class wrapping ZK Compression functionality
  * 
@@ -10,13 +10,13 @@
  * - Core modules for wallet, RPC, and relayer functionality
  * 
  * Exports:
- * - GhostSol class - Main SDK implementation
+ * - Zera class - Main SDK implementation
  */
 
 import { Connection, PublicKey, Transaction, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { createRpc } from '@lightprotocol/stateless.js';
 import { 
-  GhostSolConfig, 
+  ZeraConfig, 
   ExtendedWalletAdapter, 
   TransferResult, 
   CompressedBalance,
@@ -26,7 +26,7 @@ import { normalizeWallet } from './wallet';
 import { createCompressedRpc, validateRpcConnection } from './rpc';
 import { createTestRelayer, Relayer } from './relayer';
 import { 
-  GhostSolError, 
+  ZeraError, 
   CompressionError, 
   TransferError, 
   DecompressionError,
@@ -46,12 +46,13 @@ import { getMonitor } from './monitoring';
 import { getAnalytics } from './analytics';
 
 /**
- * Main GhostSol SDK class providing privacy-focused Solana operations
+ * Main Zera SDK class providing privacy-focused Solana operations
  * 
- * This class wraps ZK Compression functionality to provide a simple
- * interface for private SOL transfers using compressed tokens.
+ * Zera is a developer-first privacy SDK that makes private transactions simple.
+ * With a clean API, developers can implement private SOL and SPL token transfers
+ * in just a few lines using ZK Compression functionality.
  */
-export class GhostSol {
+export class Zera {
   private connection!: Connection;
   private rpc!: any; // ZK Compression RPC instance
   private wallet!: ExtendedWalletAdapter;
@@ -61,7 +62,7 @@ export class GhostSol {
   private initialized: boolean = false;
 
   /**
-   * Initialize the GhostSol SDK with configuration
+   * Initialize the Zera SDK with configuration
    * 
    * This method sets up all necessary connections and services:
    * - Normalizes the provided wallet
@@ -71,9 +72,9 @@ export class GhostSol {
    * 
    * @param config - Configuration options for SDK initialization
    * @returns Promise that resolves when initialization is complete
-   * @throws GhostSolError if initialization fails
+   * @throws ZeraError if initialization fails
    */
-  async init(config: GhostSolConfig): Promise<void> {
+  async init(config: ZeraConfig): Promise<void> {
     const monitor = getMonitor();
     const analytics = getAnalytics();
     const endTimer = monitor?.startTimer('init');
@@ -91,7 +92,7 @@ export class GhostSol {
       } catch (error) {
         // Log warning but don't fail initialization if in development
         if (error instanceof EnvConfigError) {
-          console.warn('[GhostSol] Security warning:', error.message);
+          console.warn('[Zera] Security warning:', error.message);
           monitor?.trackError(error, { 
             operation: 'init', 
             severity: 'low',
@@ -112,7 +113,7 @@ export class GhostSol {
         // If env config fails but explicit config is provided, use explicit config
         // This allows SDK to work without env vars if all config is provided explicitly
         if (!config.rpcUrl && !config.cluster && !config.rpcConfig) {
-          throw new GhostSolError(
+          throw new ZeraError(
             `Environment configuration validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
             'CONFIG_ERROR',
             error instanceof Error ? error : undefined
@@ -130,7 +131,7 @@ export class GhostSol {
       const networkConfig = NETWORKS[cluster];
       
       if (!networkConfig) {
-        throw new GhostSolError(`Unsupported cluster: ${cluster}`, 'CONFIG_ERROR');
+        throw new ZeraError(`Unsupported cluster: ${cluster}`, 'CONFIG_ERROR');
       }
 
       // Initialize RPC manager if advanced config is provided
@@ -159,7 +160,7 @@ export class GhostSol {
           try {
             this.rpc = await this.rpcManager.getZkRpc();
           } catch (zkError) {
-            console.warn('[GhostSol] ZK Compression RPC not available, using fallback');
+            console.warn('[Zera] ZK Compression RPC not available, using fallback');
             // Fall back to regular connection-based RPC
             const rpcConfigLegacy = createCompressedRpc({ ...config, cluster });
             this.rpc = rpcConfigLegacy.rpc;
@@ -172,7 +173,7 @@ export class GhostSol {
           try {
             new URL(rpcUrl);
           } catch {
-            throw new GhostSolError(
+            throw new ZeraError(
               `Invalid RPC URL format: ${rpcUrl}. Must be a valid HTTP or HTTPS URL.`,
               'CONFIG_ERROR'
             );
@@ -216,10 +217,10 @@ export class GhostSol {
       );
       analytics?.trackError('initialization_failed', {
         cluster: config.cluster,
-      });
+      }      );
       
-      throw new GhostSolError(
-        `Failed to initialize GhostSol SDK: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      throw new ZeraError(
+        `Failed to initialize Zera SDK: ${error instanceof Error ? error.message : 'Unknown error'}`,
         'INIT_ERROR',
         error instanceof Error ? error : undefined
       );
@@ -230,7 +231,7 @@ export class GhostSol {
    * Get the user's public key as a base58 string
    * 
    * @returns Base58 encoded public key
-   * @throws GhostSolError if SDK is not initialized
+   * @throws ZeraError if SDK is not initialized
    */
   getAddress(): string {
     this._assertInitialized();
@@ -244,7 +245,7 @@ export class GhostSol {
    * RPC methods. Returns 0 if no compressed account exists.
    * 
    * @returns Promise resolving to balance in lamports
-   * @throws GhostSolError if balance query fails
+   * @throws ZeraError if balance query fails
    */
   async getBalance(): Promise<number> {
     this._assertInitialized();
@@ -280,7 +281,7 @@ export class GhostSol {
       );
       analytics?.trackError('get_balance_failed');
       
-      throw new GhostSolError(
+      throw new ZeraError(
         `Failed to get compressed balance: ${error instanceof Error ? error.message : 'Unknown error'}`,
         'BALANCE_ERROR',
         error instanceof Error ? error : undefined
@@ -296,7 +297,7 @@ export class GhostSol {
    * 
    * @param lamports - Amount to compress in lamports
    * @returns Promise resolving to transaction signature
-   * @throws GhostSolError if compression fails
+   * @throws ZeraError if compression fails
    */
   async compress(lamports: number): Promise<string> {
     this._assertInitialized();
@@ -360,7 +361,7 @@ export class GhostSol {
    * @param recipientAddress - Recipient's public key as base58 string
    * @param lamports - Amount to transfer in lamports
    * @returns Promise resolving to transaction signature
-   * @throws GhostSolError if transfer fails
+   * @throws ZeraError if transfer fails
    */
   async transfer(recipientAddress: string, lamports: number): Promise<string> {
     this._assertInitialized();
@@ -427,7 +428,7 @@ export class GhostSol {
    * @param lamports - Amount to decompress in lamports
    * @param destination - Optional destination address (defaults to user's address)
    * @returns Promise resolving to transaction signature
-   * @throws GhostSolError if decompression fails
+   * @throws ZeraError if decompression fails
    */
   async decompress(lamports: number, destination?: string): Promise<string> {
     this._assertInitialized();
@@ -494,7 +495,7 @@ export class GhostSol {
    * 
    * @param lamports - Amount to request in lamports (default: 2 SOL)
    * @returns Promise resolving to transaction signature
-   * @throws GhostSolError if airdrop fails or times out
+   * @throws ZeraError if airdrop fails or times out
    */
   async fundDevnet(lamports: number = 2 * LAMPORTS_PER_SOL): Promise<string> {
     this._assertInitialized();
@@ -531,7 +532,7 @@ export class GhostSol {
       return signature;
       
     } catch (error) {
-      throw new GhostSolError(
+      throw new ZeraError(
         `Failed to request devnet airdrop: ${error instanceof Error ? error.message : 'Unknown error'}. ` +
         'This may be due to rate limiting or network issues. Try using https://faucet.solana.com manually.',
         'AIRDROP_ERROR',
@@ -559,7 +560,7 @@ export class GhostSol {
    * Get detailed balance information including compressed and regular SOL
    * 
    * @returns Promise resolving to detailed balance information
-   * @throws GhostSolError if balance query fails
+   * @throws ZeraError if balance query fails
    */
   async getDetailedBalance(): Promise<CompressedBalance> {
     this._assertInitialized();
@@ -576,7 +577,7 @@ export class GhostSol {
       };
       
     } catch (error) {
-      throw new GhostSolError(
+      throw new ZeraError(
         `Failed to get detailed balance: ${error instanceof Error ? error.message : 'Unknown error'}`,
         'BALANCE_ERROR',
         error instanceof Error ? error : undefined
@@ -629,12 +630,12 @@ export class GhostSol {
   /**
    * Assert that the SDK is initialized
    * 
-   * @throws GhostSolError if SDK is not initialized
+   * @throws ZeraError if SDK is not initialized
    */
   private _assertInitialized(): void {
     if (!this.initialized) {
-      throw new GhostSolError(
-        'GhostSol SDK is not initialized. Call init() first.',
+      throw new ZeraError(
+        'Zera SDK is not initialized. Call init() first.',
         'NOT_INITIALIZED'
       );
     }

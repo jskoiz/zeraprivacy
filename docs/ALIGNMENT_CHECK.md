@@ -92,21 +92,21 @@ The SDK demonstrates strong architectural principles:
 ```
 sdk/src/
 ├── core/                    ✅ Well-structured
-│   ├── ghost-sol.ts        ✅ Efficiency mode complete
+│   ├── zera.ts        ✅ Efficiency mode complete
 │   ├── types.ts            ✅ Comprehensive types
 │   ├── errors.ts           ✅ Proper error handling
 │   ├── wallet.ts           ✅ Wallet abstraction
 │   ├── rpc.ts              ✅ Multi-provider failover implemented
 │   └── ...
 ├── privacy/                 ⚠️ Architecture good, implementation stubs
-│   ├── ghost-sol-privacy.ts    ⚠️ TODO: Implement SPL CT integration
+│   ├── zera-privacy.ts    ⚠️ TODO: Implement SPL CT integration
 │   ├── confidential-transfer.ts ⚠️ TODO: Implement mint/account operations
 │   ├── encryption.ts           ⚠️ TODO: Implement ElGamal encryption
 │   ├── viewing-keys.ts         ⚠️ TODO: Implement viewing key generation
 │   └── types.ts                ✅ Type definitions complete
 ├── react/                   ✅ React integration complete
-│   ├── GhostSolProvider.tsx ✅ Context provider
-│   └── useGhostSol.ts      ✅ React hooks
+│   ├── ZeraProvider.tsx ✅ Context provider
+│   └── useZera.ts      ✅ React hooks
 └── index.ts                 ✅ Dual-mode API perfect
 ```
 
