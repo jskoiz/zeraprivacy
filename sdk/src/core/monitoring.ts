@@ -325,7 +325,7 @@ export class SdkMonitor {
   /**
    * Start timing an operation
    */
-  startTimer(operation: string): () => void {
+  startTimer(operation: string): (success?: boolean, metadata?: Record<string, any>) => void {
     const startTime = performance.now();
     
     return (success: boolean = true, metadata?: Record<string, any>) => {

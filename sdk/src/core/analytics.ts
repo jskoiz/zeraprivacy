@@ -137,7 +137,7 @@ export class SdkAnalytics {
   private operationDurations: number[] = [];
   
   // Flush timer
-  private flushTimer?: NodeJS.Timeout;
+  private flushTimer?: ReturnType<typeof setInterval>;
 
   constructor(config?: Partial<AnalyticsConfig>) {
     this.config = {
