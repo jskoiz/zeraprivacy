@@ -39,6 +39,7 @@ import {
   transferCompressedTokens,
   decompressTokens 
 } from './compression';
+import { loadAndValidateConfig, validateNoSensitiveExposure, EnvConfigError } from './env-config';
 
 /**
  * Main GhostSol SDK class providing privacy-focused Solana operations
@@ -69,11 +70,43 @@ export class GhostSol {
    */
   async init(config: GhostSolConfig): Promise<void> {
     try {
+      // Validate environment configuration for security
+      try {
+        validateNoSensitiveExposure();
+      } catch (error) {
+        // Log warning but don't fail initialization if in development
+        if (error instanceof EnvConfigError) {
+          console.warn('[GhostSol] Security warning:', error.message);
+        }
+      }
+      
+      // Load and validate environment configuration
+      // This validates env vars but doesn't override explicit config
+      let envConfig;
+      try {
+        envConfig = loadAndValidateConfig({
+          cluster: config.cluster,
+          rpcUrl: config.rpcUrl,
+        });
+      } catch (error) {
+        // If env config fails but explicit config is provided, use explicit config
+        // This allows SDK to work without env vars if all config is provided explicitly
+        if (!config.rpcUrl && !config.cluster) {
+          throw new GhostSolError(
+            `Environment configuration validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            'CONFIG_ERROR',
+            error instanceof Error ? error : undefined
+          );
+        }
+        // If explicit config is provided, continue with explicit config
+      }
+      
       // Normalize wallet input
       this.wallet = normalizeWallet(config.wallet);
       
       // Determine network configuration
-      const cluster = config.cluster || 'devnet';
+      // Prefer explicit config, then env config, then defaults
+      const cluster = config.cluster || envConfig?.cluster || 'devnet';
       const networkConfig = NETWORKS[cluster];
       
       if (!networkConfig) {
@@ -81,7 +114,19 @@ export class GhostSol {
       }
 
       // Create Solana connection
-      const rpcUrl = config.rpcUrl || networkConfig.rpcUrl;
+      // Prefer explicit config, then env config, then network defaults
+      const rpcUrl = config.rpcUrl || envConfig?.rpcUrl || networkConfig.rpcUrl;
+      
+      // Validate RPC URL format
+      try {
+        new URL(rpcUrl);
+      } catch {
+        throw new GhostSolError(
+          `Invalid RPC URL format: ${rpcUrl}. Must be a valid HTTP or HTTPS URL.`,
+          'CONFIG_ERROR'
+        );
+      }
+      
       this.connection = new Connection(rpcUrl, {
         commitment: config.commitment || networkConfig.commitment,
         confirmTransactionInitialTimeout: 60000,

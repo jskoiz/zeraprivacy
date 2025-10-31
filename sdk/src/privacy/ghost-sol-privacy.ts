@@ -35,7 +35,7 @@ import {
 } from './errors';
 import { ConfidentialTransferManager } from './confidential-transfer';
 import { EncryptionUtils } from './encryption';
-import { ViewingKeyManager } from './viewing-keys';
+import { ViewingKeyManager, ViewingKeyConfig } from './viewing-keys';
 import { ExtendedWalletAdapter } from '../core/types';
 
 /**
@@ -371,8 +371,10 @@ export class GhostSolPrivacy {
 
   /**
    * Generate viewing key for compliance/auditing
+   * 
+   * @param config - Optional viewing key configuration (permissions, expiration, auditor)
    */
-  async generateViewingKey(): Promise<ViewingKey> {
+  async generateViewingKey(config?: ViewingKeyConfig): Promise<ViewingKey> {
     this._assertInitialized();
     
     if (!this.config.enableViewingKeys || !this.viewingKeyManager) {
@@ -381,7 +383,8 @@ export class GhostSolPrivacy {
     
     try {
       return await this.viewingKeyManager.generateViewingKey(
-        this.confidentialAccount!.address
+        this.confidentialAccount!.address,
+        config
       );
     } catch (error) {
       throw new PrivacyError(
@@ -389,6 +392,70 @@ export class GhostSolPrivacy {
         error instanceof Error ? error : undefined
       );
     }
+  }
+
+  /**
+   * Decrypt transaction amount using viewing key
+   * 
+   * @param txSignature - Transaction signature
+   * @param viewingKey - Viewing key for decryption
+   */
+  async decryptTransactionAmount(
+    txSignature: string,
+    viewingKey: ViewingKey
+  ): Promise<number> {
+    this._assertInitialized();
+    
+    if (!this.config.enableViewingKeys || !this.viewingKeyManager) {
+      throw new PrivacyError('Viewing keys not enabled');
+    }
+    
+    try {
+      return await this.viewingKeyManager.decryptTransactionAmount(
+        txSignature,
+        viewingKey
+      );
+    } catch (error) {
+      throw new PrivacyError(
+        `Failed to decrypt transaction amount: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error : undefined
+      );
+    }
+  }
+
+  /**
+   * Revoke a viewing key (set expiration to now)
+   * 
+   * @param viewingKey - Viewing key to revoke
+   */
+  async revokeViewingKey(viewingKey: ViewingKey): Promise<ViewingKey> {
+    this._assertInitialized();
+    
+    if (!this.config.enableViewingKeys || !this.viewingKeyManager) {
+      throw new PrivacyError('Viewing keys not enabled');
+    }
+    
+    try {
+      return await this.viewingKeyManager.revokeViewingKey(viewingKey);
+    } catch (error) {
+      throw new PrivacyError(
+        `Failed to revoke viewing key: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error : undefined
+      );
+    }
+  }
+
+  /**
+   * Check if viewing key is valid
+   * 
+   * @param viewingKey - Viewing key to validate
+   */
+  isViewingKeyValid(viewingKey: ViewingKey): boolean {
+    if (!this.config.enableViewingKeys || !this.viewingKeyManager) {
+      return false;
+    }
+    
+    return this.viewingKeyManager.isViewingKeyValid(viewingKey);
   }
 
   // Private helper methods
