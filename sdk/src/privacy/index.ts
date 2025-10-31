@@ -19,6 +19,13 @@ export { ConfidentialTransferManager } from './confidential-transfer';
 export { EncryptionUtils } from './encryption';
 export { ViewingKeyManager, ViewingKeyConfig } from './viewing-keys';
 export { StealthAddressManager } from './stealth-address';
+export { 
+  ProductionElGamal, 
+  ElGamalUtils,
+  ElGamalKeypair,
+  ElGamalCiphertext,
+  RangeProof
+} from './elgamal-production';
 
 // Type exports
 export type {
