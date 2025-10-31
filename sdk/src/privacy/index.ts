@@ -20,12 +20,11 @@ export { EncryptionUtils } from './encryption';
 export { ViewingKeyManager, ViewingKeyConfig } from './viewing-keys';
 export { StealthAddressManager } from './stealth-address';
 export { 
-  ProductionElGamal, 
-  ElGamalUtils,
-  ElGamalKeypair,
-  ElGamalCiphertext,
-  RangeProof
-} from './elgamal-production';
+  BlockchainScanner,
+  createStealthAddressMemo,
+  parseStealthAddressMemo
+} from './blockchain-scanner';
+export type { ScannerConfig, ScanResult } from './blockchain-scanner';
 
 // Type exports
 export type {

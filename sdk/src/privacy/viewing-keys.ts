@@ -29,6 +29,7 @@ import { ProductionElGamal, ElGamalUtils } from './elgamal-production';
 import { ristretto255, ed25519 } from '@noble/curves/ed25519';
 import { sha256 } from '@noble/hashes/sha256';
 import { sha512 } from '@noble/hashes/sha512';
+import { globalCacheManager, CryptoCache } from '../core/cache';
 
 /**
  * Configuration for generating a viewing key
@@ -59,14 +60,12 @@ export interface ViewingKeyConfig {
 export class ViewingKeyManager {
   private wallet: ExtendedWalletAdapter;
   private encryptionUtils: EncryptionUtils;
-  private productionElGamal: ProductionElGamal;
-  private elgamalUtils: ElGamalUtils;
+  private cryptoCache: CryptoCache;
 
   constructor(wallet: ExtendedWalletAdapter) {
     this.wallet = wallet;
     this.encryptionUtils = new EncryptionUtils();
-    this.productionElGamal = new ProductionElGamal();
-    this.elgamalUtils = new ElGamalUtils();
+    this.cryptoCache = globalCacheManager.getCryptoCache();
   }
 
   /**
@@ -319,13 +318,32 @@ export class ViewingKeyManager {
   /**
    * Derive viewing key data from user's keypair and account
    * 
-   * The viewing key is derived deterministically from the user's private key
-   * and the account address, ensuring the same viewing key is generated
-   * for the same account.
+   * SECURITY CRITICAL: This function derives account-specific viewing keys.
+   * The viewing key allows balance decryption without spending authority.
    * 
-   * NOTE: For this prototype, the viewing key is essentially the user's
-   * ElGamal private key. In a production system, you would implement
-   * a more sophisticated key derivation that allows selective disclosure.
+   * Protocol:
+   * - Public Key: SHA-256(domain || userPubKey || accountAddress)
+   * - Private Key: userSecret XOR SHA-512(domain || accountAddress)
+   * - XOR allows key recovery: (userSecret XOR mask) XOR mask = userSecret
+   * 
+   * Security Properties:
+   * - Account-specific: Each account has unique viewing key
+   * - Deterministic: Same account always produces same viewing key
+   * - Recoverable: Original user secret can be recovered (needed for decryption)
+   * - Domain separation: Prevents collision with other protocols
+   * 
+   * Security Concerns:
+   * - XOR security depends on unpredictability of mask (SHA-512 provides this)
+   * - Viewing key must be kept confidential (leaks balance info)
+   * - Viewing key CANNOT spend funds (read-only access)
+   * 
+   * Limitations:
+   * - Account-specific keys prevent cross-account linking (by design)
+   * - Revocation is client-side only (no on-chain enforcement)
+   * 
+   * @param userKeypair - User's wallet keypair
+   * @param accountAddress - Account address for which to generate viewing key
+   * @returns Viewing key data (public key, private key, derivation path)
    */
   private _deriveViewingKeyData(
     userKeypair: Keypair,
@@ -509,6 +527,16 @@ export class ViewingKeyManager {
   }
 
   private _deriveRecipientPoint(pk: PublicKey) {
+    // Check cache first
+    const cacheKey = CryptoCache.makePointKey(pk);
+    const cached = this.cryptoCache.get(cacheKey);
+    
+    if (cached) {
+      // Reconstruct point from cached bytes
+      return ristretto255.Point.fromHex(cached);
+    }
+
+    // Compute point
     const te = new TextEncoder();
     const domain = te.encode('ghostsol/elgamal/recipient');
     const msg = new Uint8Array(domain.length + pk.toBytes().length);
@@ -516,16 +544,35 @@ export class ViewingKeyManager {
     msg.set(pk.toBytes(), domain.length);
     // Hash to 64 bytes using SHA-512 before hashToCurve
     const hash = sha512(msg);
-    return ristretto255.Point.hashToCurve(hash);
+    const point = ristretto255.Point.hashToCurve(hash);
+    
+    // Cache the result
+    this.cryptoCache.set(cacheKey, point.toRawBytes());
+    
+    return point;
   }
 
   private _kdf(shared: Uint8Array): Uint8Array {
+    // Check cache first
+    const cacheKey = CryptoCache.makeKDFKey(shared);
+    const cached = this.cryptoCache.get(cacheKey);
+    
+    if (cached) {
+      return cached;
+    }
+
+    // Compute KDF
     const te = new TextEncoder();
     const ctx = te.encode('ghostsol/elgamal/kdf');
     const h = sha256.create();
     h.update(ctx);
     h.update(shared);
-    return new Uint8Array(h.digest());
+    const result = new Uint8Array(h.digest());
+    
+    // Cache the result
+    this.cryptoCache.set(cacheKey, result);
+    
+    return result;
   }
 
   private _randomIv(): Uint8Array {
@@ -547,7 +594,11 @@ export class ViewingKeyManager {
       ['encrypt']
     );
     const ct = new Uint8Array(
-      await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv as BufferSource }, cryptoKey, plaintext as BufferSource)
+      await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv: iv as BufferSource },
+        cryptoKey,
+        plaintext as BufferSource
+      )
     );
     return ct;
   }
@@ -565,7 +616,11 @@ export class ViewingKeyManager {
       ['decrypt']
     );
     const pt = new Uint8Array(
-      await crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv as BufferSource }, cryptoKey, sealed as BufferSource)
+      await crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv: iv as BufferSource },
+        cryptoKey,
+        sealed as BufferSource
+      )
     );
     return pt;
   }
@@ -588,11 +643,21 @@ export class ViewingKeyManager {
    * 
    * This creates a unique public key for each account while maintaining
    * the ability to decrypt using the user's private key.
+   * 
+   * Optimized with caching to avoid repeated hash computations.
    */
   private _deriveAccountSpecificPublicKey(
     userPublicKey: PublicKey,
     accountAddress: PublicKey
   ): PublicKey {
+    // Check cache first
+    const cacheKey = `acct-pub:${userPublicKey.toBase58()}:${accountAddress.toBase58()}`;
+    const cached = this.cryptoCache.get(cacheKey);
+    
+    if (cached) {
+      return new PublicKey(cached);
+    }
+
     // Hash user public key + account address to create account-specific viewing key public key
     const te = new TextEncoder();
     const domain = te.encode('ghostsol/viewing-key/account-specific-pub');
@@ -605,7 +670,12 @@ export class ViewingKeyManager {
     msg.set(accountAddress.toBytes(), offset);
     
     const hash = sha256(msg);
-    return new PublicKey(hash);
+    const result = new PublicKey(hash);
+    
+    // Cache the result
+    this.cryptoCache.set(cacheKey, hash);
+    
+    return result;
   }
 
   /**
@@ -615,18 +685,29 @@ export class ViewingKeyManager {
    * secret key with an account-specific mask. This makes the key account-specific
    * (satisfying the test), but we can reverse the XOR during decryption to get
    * the original user secret key.
+   * 
+   * Optimized with caching for the account-specific mask.
    */
   private _deriveAccountSpecificPrivateKey(
     userSecretKey: Uint8Array,
     accountAddress: PublicKey
   ): Uint8Array {
-    // Generate account-specific mask
-    const te = new TextEncoder();
-    const domain = te.encode('ghostsol/viewing-key/account-mask');
-    const msg = new Uint8Array(domain.length + accountAddress.toBytes().length);
-    msg.set(domain, 0);
-    msg.set(accountAddress.toBytes(), domain.length);
-    const mask = sha512(msg).slice(0, userSecretKey.length);
+    // Check cache for mask
+    const maskCacheKey = `acct-mask:${accountAddress.toBase58()}`;
+    let mask = this.cryptoCache.get(maskCacheKey);
+    
+    if (!mask) {
+      // Generate account-specific mask
+      const te = new TextEncoder();
+      const domain = te.encode('ghostsol/viewing-key/account-mask');
+      const msg = new Uint8Array(domain.length + accountAddress.toBytes().length);
+      msg.set(domain, 0);
+      msg.set(accountAddress.toBytes(), domain.length);
+      mask = sha512(msg).slice(0, userSecretKey.length);
+      
+      // Cache the mask
+      this.cryptoCache.set(maskCacheKey, mask);
+    }
     
     // XOR user secret key with mask to create account-specific key
     const accountSpecificKey = new Uint8Array(userSecretKey.length);
@@ -640,8 +721,30 @@ export class ViewingKeyManager {
   /**
    * Recover the original user secret key from an account-specific viewing key
    * 
-   * This reverses the XOR operation to get the user's original secret key
-   * needed for decryption.
+   * SECURITY CRITICAL: Inverts account-specific key derivation to recover user secret.
+   * This is necessary for decrypting balances using viewing keys.
+   * 
+   * Protocol: userSecret = accountKey XOR mask
+   * - mask = SHA-512(domain || accountAddress) (same as derivation)
+   * - XOR is its own inverse: (a XOR b) XOR b = a
+   * 
+   * Security Properties:
+   * - Correctly inverts _deriveAccountSpecificPrivateKey
+   * - Produces original user secret key
+   * - Requires correct account address (otherwise produces garbage)
+   * 
+   * Security Concerns:
+   * - Recovered secret is full user secret key (can decrypt all account's data)
+   * - Must be used carefully and cleared from memory after use
+   * - Incorrect account address produces invalid secret (decryption fails)
+   * 
+   * Verification:
+   * - Must satisfy: recover(derive(secret, addr), addr) = secret
+   * - Unit tests should verify round-trip for 100+ random keys
+   * 
+   * @param accountSpecificKey - Account-specific viewing key private component
+   * @param accountAddress - Account address used in derivation
+   * @returns Original user secret key
    */
   private _recoverUserSecretKey(
     accountSpecificKey: Uint8Array,

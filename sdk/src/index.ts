@@ -513,3 +513,64 @@ export {
   ViewingKeyError,
   StealthAddressError
 } from './privacy/errors';
+
+// Export RPC configuration classes and functions
+export {
+  loadRpcConfig,
+  createRpcConfigFromUrl,
+  validateRpcConfig,
+  getRpcConfigForLogging,
+  getZkCompressionEndpoints,
+  hasZkCompressionSupport,
+  DEFAULT_RPC_CONFIG
+} from './core/rpc-config';
+
+export type {
+  RpcConfig,
+  RpcEndpointConfig,
+  RpcProvider
+} from './core/rpc-config';
+
+export {
+  RpcManager,
+  createRpcManager,
+  EndpointHealth
+} from './core/rpc-manager';
+
+export type {
+  EndpointHealthInfo
+} from './core/rpc-manager';
+
+// Export monitoring and analytics
+export {
+  initializeMonitoring,
+  getMonitor,
+  disableMonitoring,
+  SdkMonitor
+} from './core/monitoring';
+
+export type {
+  MonitoringConfig,
+  ErrorEvent,
+  PerformanceMetric,
+  HealthCheckResult,
+  MonitoringStats,
+  Alert,
+  AlertThresholds
+} from './core/monitoring';
+
+export {
+  initializeAnalytics,
+  getAnalytics,
+  disableAnalytics,
+  SdkAnalytics,
+  anonymizeOperationProps
+} from './core/analytics';
+
+export type {
+  AnalyticsConfig,
+  AnalyticsEvent,
+  AnalyticsEventType,
+  UsageStats,
+  FeatureUsage
+} from './core/analytics';

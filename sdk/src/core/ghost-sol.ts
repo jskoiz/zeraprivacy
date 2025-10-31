@@ -40,6 +40,10 @@ import {
   decompressTokens 
 } from './compression';
 import { loadAndValidateConfig, validateNoSensitiveExposure, EnvConfigError } from './env-config';
+import { loadRpcConfig, createRpcConfigFromUrl } from './rpc-config';
+import { RpcManager, createRpcManager } from './rpc-manager';
+import { getMonitor } from './monitoring';
+import { getAnalytics } from './analytics';
 
 /**
  * Main GhostSol SDK class providing privacy-focused Solana operations
@@ -53,6 +57,7 @@ export class GhostSol {
   private wallet!: ExtendedWalletAdapter;
   private relayer!: Relayer;
   private balanceCache!: BalanceCache;
+  private rpcManager?: RpcManager;
   private initialized: boolean = false;
 
   /**
@@ -69,7 +74,17 @@ export class GhostSol {
    * @throws GhostSolError if initialization fails
    */
   async init(config: GhostSolConfig): Promise<void> {
+    const monitor = getMonitor();
+    const analytics = getAnalytics();
+    const endTimer = monitor?.startTimer('init');
+    
     try {
+      // Track initialization
+      analytics?.trackOperationStart('init', {
+        cluster: config.cluster,
+        hasRpcConfig: !!config.rpcConfig,
+      });
+
       // Validate environment configuration for security
       try {
         validateNoSensitiveExposure();
@@ -77,6 +92,11 @@ export class GhostSol {
         // Log warning but don't fail initialization if in development
         if (error instanceof EnvConfigError) {
           console.warn('[GhostSol] Security warning:', error.message);
+          monitor?.trackError(error, { 
+            operation: 'init', 
+            severity: 'low',
+            metadata: { phase: 'security_validation' }
+          });
         }
       }
       
@@ -91,7 +111,7 @@ export class GhostSol {
       } catch (error) {
         // If env config fails but explicit config is provided, use explicit config
         // This allows SDK to work without env vars if all config is provided explicitly
-        if (!config.rpcUrl && !config.cluster) {
+        if (!config.rpcUrl && !config.cluster && !config.rpcConfig) {
           throw new GhostSolError(
             `Environment configuration validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
             'CONFIG_ERROR',
@@ -113,33 +133,64 @@ export class GhostSol {
         throw new GhostSolError(`Unsupported cluster: ${cluster}`, 'CONFIG_ERROR');
       }
 
-      // Create Solana connection
-      // Prefer explicit config, then env config, then network defaults
-      const rpcUrl = config.rpcUrl || envConfig?.rpcUrl || networkConfig.rpcUrl;
-      
-      // Validate RPC URL format
-      try {
-        new URL(rpcUrl);
-      } catch {
-        throw new GhostSolError(
-          `Invalid RPC URL format: ${rpcUrl}. Must be a valid HTTP or HTTPS URL.`,
-          'CONFIG_ERROR'
-        );
+      // Initialize RPC manager if advanced config is provided
+      if (config.rpcConfig) {
+        this.rpcManager = createRpcManager(config.rpcConfig);
+        this.connection = await this.rpcManager.getConnection();
+        this.rpc = await this.rpcManager.getZkRpc();
+      } else if (config.rpcUrl) {
+        // Simple URL-based configuration with basic fallback
+        const rpcConfig = createRpcConfigFromUrl(config.rpcUrl, cluster, {
+          commitment: config.commitment,
+        });
+        this.rpcManager = createRpcManager(rpcConfig);
+        this.connection = await this.rpcManager.getConnection();
+        this.rpc = await this.rpcManager.getZkRpc();
+      } else {
+        // Load RPC configuration from environment variables
+        try {
+          const rpcConfig = loadRpcConfig(cluster, {
+            commitment: config.commitment,
+          });
+          this.rpcManager = createRpcManager(rpcConfig);
+          this.connection = await this.rpcManager.getConnection();
+          
+          // Try to get ZK RPC if available
+          try {
+            this.rpc = await this.rpcManager.getZkRpc();
+          } catch (zkError) {
+            console.warn('[GhostSol] ZK Compression RPC not available, using fallback');
+            // Fall back to regular connection-based RPC
+            const rpcConfigLegacy = createCompressedRpc({ ...config, cluster });
+            this.rpc = rpcConfigLegacy.rpc;
+          }
+        } catch (rpcConfigError) {
+          // Fallback to legacy configuration method
+          const rpcUrl = envConfig?.rpcUrl || networkConfig.rpcUrl;
+          
+          // Validate RPC URL format
+          try {
+            new URL(rpcUrl);
+          } catch {
+            throw new GhostSolError(
+              `Invalid RPC URL format: ${rpcUrl}. Must be a valid HTTP or HTTPS URL.`,
+              'CONFIG_ERROR'
+            );
+          }
+          
+          this.connection = new Connection(rpcUrl, {
+            commitment: config.commitment || networkConfig.commitment,
+            confirmTransactionInitialTimeout: 60000,
+          });
+
+          // Validate RPC connection
+          await validateRpcConnection(this.connection);
+
+          // Initialize ZK Compression RPC using legacy method
+          const rpcConfigLegacy = createCompressedRpc({ ...config, cluster });
+          this.rpc = rpcConfigLegacy.rpc;
+        }
       }
-      
-      this.connection = new Connection(rpcUrl, {
-        commitment: config.commitment || networkConfig.commitment,
-        confirmTransactionInitialTimeout: 60000,
-      });
-
-      // Validate RPC connection
-      await validateRpcConnection(this.connection);
-
-      // Initialize ZK Compression RPC
-      // Note: Based on research, the actual API may differ from the initial spec
-      // This will need to be adjusted based on the real @lightprotocol/stateless.js API
-      const rpcConfig = createCompressedRpc(config);
-      this.rpc = rpcConfig.rpc;
 
       // Create TestRelayer using user's wallet as fee payer
       this.relayer = createTestRelayer(this.wallet, this.connection);
@@ -149,7 +200,24 @@ export class GhostSol {
 
       this.initialized = true;
       
+      // Track successful initialization
+      endTimer?.(true);
+      analytics?.trackFeature('sdk_initialization', {
+        cluster: config.cluster,
+        success: true,
+      });
+      
     } catch (error) {
+      // Track initialization failure
+      endTimer?.(false);
+      monitor?.trackError(
+        error instanceof Error ? error : new Error('Unknown initialization error'),
+        { operation: 'init', severity: 'critical' }
+      );
+      analytics?.trackError('initialization_failed', {
+        cluster: config.cluster,
+      });
+      
       throw new GhostSolError(
         `Failed to initialize GhostSol SDK: ${error instanceof Error ? error.message : 'Unknown error'}`,
         'INIT_ERROR',
@@ -181,6 +249,10 @@ export class GhostSol {
   async getBalance(): Promise<number> {
     this._assertInitialized();
     
+    const monitor = getMonitor();
+    const analytics = getAnalytics();
+    const endTimer = monitor?.startTimer('getBalance');
+    
     try {
       // Use balance cache for performance
       const detailedBalance = await getCompressedBalance(
@@ -189,13 +261,24 @@ export class GhostSol {
         this.balanceCache
       );
       
+      endTimer?.(true);
+      analytics?.trackFeature('get_balance', { success: true });
+      
       return detailedBalance.lamports;
       
     } catch (error) {
       // If no compressed account exists, return 0
       if (error instanceof Error && error.message.includes('not found')) {
+        endTimer?.(true);
         return 0;
       }
+      
+      endTimer?.(false);
+      monitor?.trackError(
+        error instanceof Error ? error : new Error('Unknown balance error'),
+        { operation: 'getBalance', severity: 'medium' }
+      );
+      analytics?.trackError('get_balance_failed');
       
       throw new GhostSolError(
         `Failed to get compressed balance: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -218,9 +301,15 @@ export class GhostSol {
   async compress(lamports: number): Promise<string> {
     this._assertInitialized();
     
+    const monitor = getMonitor();
+    const analytics = getAnalytics();
+    const endTimer = monitor?.startTimer('compress');
+    
     // Validate input
     if (lamports <= 0) {
-      throw new ValidationError('Amount must be greater than 0');
+      const validationError = new ValidationError('Amount must be greater than 0');
+      monitor?.trackError(validationError, { operation: 'compress', severity: 'low' });
+      throw validationError;
     }
 
     try {
@@ -237,9 +326,19 @@ export class GhostSol {
       // Invalidate balance cache after successful compression
       this.balanceCache.invalidate(this.wallet.publicKey.toBase58());
       
+      endTimer?.(true);
+      analytics?.trackFeature('compress', { success: true });
+      
       return result.signature;
       
     } catch (error) {
+      endTimer?.(false);
+      monitor?.trackError(
+        error instanceof Error ? error : new Error('Unknown compression error'),
+        { operation: 'compress', severity: 'high' }
+      );
+      analytics?.trackError('compress_failed');
+      
       // Re-throw specialized errors as-is, wrap others
       if (error instanceof CompressionError || error instanceof ValidationError) {
         throw error;
@@ -266,9 +365,15 @@ export class GhostSol {
   async transfer(recipientAddress: string, lamports: number): Promise<string> {
     this._assertInitialized();
     
+    const monitor = getMonitor();
+    const analytics = getAnalytics();
+    const endTimer = monitor?.startTimer('transfer');
+    
     // Validate input
     if (lamports <= 0) {
-      throw new ValidationError('Amount must be greater than 0');
+      const validationError = new ValidationError('Amount must be greater than 0');
+      monitor?.trackError(validationError, { operation: 'transfer', severity: 'low' });
+      throw validationError;
     }
 
     try {
@@ -288,9 +393,19 @@ export class GhostSol {
       // Invalidate balance cache after successful transfer
       this.balanceCache.invalidate(this.wallet.publicKey.toBase58());
       
+      endTimer?.(true);
+      analytics?.trackFeature('transfer', { success: true });
+      
       return result.signature;
       
     } catch (error) {
+      endTimer?.(false);
+      monitor?.trackError(
+        error instanceof Error ? error : new Error('Unknown transfer error'),
+        { operation: 'transfer', severity: 'high' }
+      );
+      analytics?.trackError('transfer_failed');
+      
       // Re-throw specialized errors as-is, wrap others
       if (error instanceof TransferError || error instanceof ValidationError) {
         throw error;
@@ -317,9 +432,15 @@ export class GhostSol {
   async decompress(lamports: number, destination?: string): Promise<string> {
     this._assertInitialized();
     
+    const monitor = getMonitor();
+    const analytics = getAnalytics();
+    const endTimer = monitor?.startTimer('decompress');
+    
     // Validate input
     if (lamports <= 0) {
-      throw new ValidationError('Amount must be greater than 0');
+      const validationError = new ValidationError('Amount must be greater than 0');
+      monitor?.trackError(validationError, { operation: 'decompress', severity: 'low' });
+      throw validationError;
     }
 
     try {
@@ -339,9 +460,19 @@ export class GhostSol {
       // Invalidate balance cache after successful decompression
       this.balanceCache.invalidate(this.wallet.publicKey.toBase58());
       
+      endTimer?.(true);
+      analytics?.trackFeature('decompress', { success: true });
+      
       return result.signature;
       
     } catch (error) {
+      endTimer?.(false);
+      monitor?.trackError(
+        error instanceof Error ? error : new Error('Unknown decompression error'),
+        { operation: 'decompress', severity: 'high' }
+      );
+      analytics?.trackError('decompress_failed');
+      
       // Re-throw specialized errors as-is, wrap others
       if (error instanceof DecompressionError || error instanceof ValidationError) {
         throw error;
@@ -460,6 +591,39 @@ export class GhostSol {
    */
   isInitialized(): boolean {
     return this.initialized;
+  }
+
+  /**
+   * Get RPC metrics for monitoring
+   * 
+   * @returns RPC metrics including health status and performance data
+   */
+  getRpcMetrics(): any {
+    if (this.rpcManager) {
+      return this.rpcManager.getMetrics();
+    }
+    return null;
+  }
+
+  /**
+   * Get RPC health status
+   * 
+   * @returns Map of endpoint URLs to health information
+   */
+  getRpcHealth(): Map<string, any> | null {
+    if (this.rpcManager) {
+      return this.rpcManager.getHealthStatus();
+    }
+    return null;
+  }
+
+  /**
+   * Cleanup resources when done
+   */
+  dispose(): void {
+    if (this.rpcManager) {
+      this.rpcManager.stop();
+    }
   }
 
   /**

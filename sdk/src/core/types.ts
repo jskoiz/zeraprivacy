@@ -22,7 +22,7 @@ import { Rpc } from '@lightprotocol/stateless.js';
 export interface GhostSolConfig {
   /** Wallet instance - can be Keypair, wallet adapter, or undefined for CLI */
   wallet?: Keypair | WalletAdapter;
-  /** Solana RPC endpoint URL */
+  /** Solana RPC endpoint URL (deprecated - use rpcConfig instead) */
   rpcUrl?: string;
   /** Solana cluster - devnet or mainnet-beta */
   cluster?: 'devnet' | 'mainnet-beta';
@@ -30,6 +30,8 @@ export interface GhostSolConfig {
   commitment?: 'processed' | 'confirmed' | 'finalized';
   /** Privacy configuration - enables true privacy vs efficiency mode */
   privacy?: PrivacySdkConfig;
+  /** Advanced RPC configuration with fallback and health checking */
+  rpcConfig?: import('./rpc-config').RpcConfig;
 }
 
 /**
@@ -129,9 +131,10 @@ export const NETWORKS: Record<string, NetworkConfig> = {
 
 /**
  * Light Protocol ZK Compression RPC endpoints
- * These are required for ZK Compression operations
+ * These are fallback endpoints - configure HELIUS_API_KEY environment variable for production
+ * @deprecated Use environment-based configuration instead
  */
-export const LIGHT_PROTOCOL_RPC_ENDPOINTS = {
-  devnet: 'https://devnet.helius-rpc.com/?api-key=7bab09d6-6b6b-4e9a-b0dd-7b2c7f6977bf',
-  mainnet: 'https://mainnet.helius-rpc.com/?api-key=7bab09d6-6b6b-4e9a-b0dd-7b2c7f6977bf'
+export const LIGHT_PROTOCOL_RPC_ENDPOINTS: Record<'devnet' | 'mainnet-beta', string> = {
+  'devnet': 'https://devnet.helius-rpc.com/?api-key=7bab09d6-6b6b-4e9a-b0dd-7b2c7f6977bf',
+  'mainnet-beta': 'https://mainnet.helius-rpc.com/?api-key=7bab09d6-6b6b-4e9a-b0dd-7b2c7f6977bf'
 };
