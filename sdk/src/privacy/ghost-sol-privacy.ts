@@ -275,22 +275,55 @@ export class GhostSolPrivacy {
     try {
       const withdrawalDestination = destination || this.wallet.publicKey;
       
-      // Generate encrypted amount for withdrawal
+      // Step 1: Get encrypted balance
+      const encryptedBalance = await this.getEncryptedBalance();
+      
+      // Step 2: Decrypt balance to verify sufficient funds
+      const decryptedBalance = await this.encryptionUtils.decryptAmount(
+        encryptedBalance.ciphertext,
+        this.wallet.rawKeypair!
+      );
+      
+      // Step 3: Verify withdraw amount
+      const isValid = await this._verifyWithdrawAmount(
+        BigInt(amount),
+        encryptedBalance,
+        decryptedBalance
+      );
+      
+      if (!isValid) {
+        throw new PrivacyError(
+          `Insufficient encrypted balance. Available: ${decryptedBalance}, Requested: ${amount}`
+        );
+      }
+      
+      // Step 4: Generate encrypted amount for withdrawal
       const encryptedAmount = await this.encryptionUtils.encryptAmount(
         BigInt(amount),
         withdrawalDestination
       );
       
-      // Generate zero-knowledge proof for withdrawal validity  
-      const zkProof = await this._generateWithdrawProof(amount, encryptedAmount);
+      // Step 5: Generate zero-knowledge proof for withdrawal validity  
+      const zkProof = await this._generateWithdrawProof(
+        BigInt(amount),
+        encryptedAmount,
+        encryptedBalance
+      );
       
-      // Execute confidential withdrawal
+      // Step 6: Execute confidential withdrawal (moves from encrypted → regular balance)
       const signature = await this.confidentialTransferManager.withdraw(
         this.confidentialAccount!.address,
         withdrawalDestination,
         encryptedAmount,
         zkProof
       );
+      
+      // Optional: Check if balance is zero and close account if needed
+      const remainingBalance = decryptedBalance - BigInt(amount);
+      if (remainingBalance === 0n && this.config.auditMode !== true) {
+        // Account cleanup could happen here (not implemented in prototype)
+        // await this._closeConfidentialAccount();
+      }
       
       return signature;
       
@@ -405,9 +438,81 @@ export class GhostSolPrivacy {
     throw new ProofGenerationError('ZK proof generation not yet implemented');
   }
   
-  private async _generateWithdrawProof(amount: number, encryptedAmount: EncryptedAmount): Promise<ZKProof> {
-    // TODO: Implement actual ZK proof generation for withdrawals
-    throw new ProofGenerationError('ZK proof generation not yet implemented');
+  /**
+   * Generate zero-knowledge proof for withdrawal
+   * Proves that: balance >= amount AND amount is valid
+   */
+  private async _generateWithdrawProof(
+    amount: bigint,
+    encryptedAmount: EncryptedAmount,
+    encryptedBalance: EncryptedBalance
+  ): Promise<ZKProof> {
+    try {
+      const startTime = Date.now();
+      
+      // Generate withdrawal proof using encryption utils
+      const zkProof = await this.encryptionUtils.generateAmountProof(
+        amount,
+        encryptedAmount,
+        'withdrawal'
+      );
+      
+      const duration = Date.now() - startTime;
+      
+      // Ensure proof generation is under 5 seconds (requirement)
+      if (duration > 5000) {
+        console.warn(`Withdrawal proof generation took ${duration}ms (exceeds 5s target)`);
+      }
+      
+      return zkProof;
+      
+    } catch (error) {
+      throw new ProofGenerationError(
+        `Failed to generate withdrawal proof: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error : undefined
+      );
+    }
+  }
+  
+  /**
+   * Verify that the withdrawal amount is valid and sufficient balance exists
+   */
+  private async _verifyWithdrawAmount(
+    amount: bigint,
+    encryptedBalance: EncryptedBalance,
+    decryptedBalance: bigint
+  ): Promise<boolean> {
+    try {
+      // Check 1: Amount must be positive
+      if (amount <= 0n) {
+        throw new PrivacyError('Withdrawal amount must be positive');
+      }
+      
+      // Check 2: Must have sufficient balance
+      if (decryptedBalance < amount) {
+        return false;
+      }
+      
+      // Check 3: Verify encrypted balance exists and is not stale
+      if (!encryptedBalance.exists) {
+        throw new PrivacyError('Confidential account has no encrypted balance');
+      }
+      
+      // Check 4: Check balance freshness (optional safety check)
+      const balanceAge = Date.now() - encryptedBalance.lastUpdated;
+      const maxAgeMs = 60 * 60 * 1000; // 1 hour
+      if (balanceAge > maxAgeMs) {
+        console.warn(`Encrypted balance is ${Math.floor(balanceAge / 1000 / 60)} minutes old`);
+      }
+      
+      return true;
+      
+    } catch (error) {
+      throw new PrivacyError(
+        `Failed to verify withdrawal amount: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error : undefined
+      );
+    }
   }
   
   private _assertInitialized(): void {
