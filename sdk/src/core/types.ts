@@ -134,7 +134,7 @@ export const NETWORKS: Record<string, NetworkConfig> = {
  * These are fallback endpoints - configure HELIUS_API_KEY environment variable for production
  * @deprecated Use environment-based configuration instead
  */
-export const LIGHT_PROTOCOL_RPC_ENDPOINTS = {
-  devnet: 'https://api.devnet.solana.com',
-  mainnet: 'https://api.mainnet-beta.solana.com'
+export const LIGHT_PROTOCOL_RPC_ENDPOINTS: Record<'devnet' | 'mainnet-beta', string> = {
+  'devnet': 'https://devnet.helius-rpc.com/?api-key=7bab09d6-6b6b-4e9a-b0dd-7b2c7f6977bf',
+  'mainnet-beta': 'https://mainnet.helius-rpc.com/?api-key=7bab09d6-6b6b-4e9a-b0dd-7b2c7f6977bf'
 };

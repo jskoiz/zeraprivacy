@@ -33,6 +33,7 @@ import {
   StealthAddressError
 } from './types';
 import { PrivacyError } from './errors';
+import { BlockchainScanner } from './blockchain-scanner';
 
 /**
  * Stealth Address Manager
@@ -41,6 +42,17 @@ import { PrivacyError } from './errors';
  * Uses ECDH over secp256k1 curve for key derivation.
  */
 export class StealthAddressManager {
+  private scanner: BlockchainScanner;
+
+  constructor() {
+    // Initialize blockchain scanner with default config
+    this.scanner = new BlockchainScanner({
+      batchSize: 100,
+      cacheExpirationMs: 60000, // 1 minute cache
+      maxScanDepth: 10000, // ~1 hour of history
+      verbose: false
+    });
+  }
   /**
    * Generate a stealth meta-address for receiving payments
    * 
@@ -262,31 +274,36 @@ export class StealthAddressManager {
    * Fetch ephemeral keys from blockchain transactions
    * 
    * This method scans the blockchain for transactions containing ephemeral keys
-   * published alongside stealth address payments. In a full implementation, this
-   * would parse transaction data or use a dedicated indexer.
+   * published alongside stealth address payments. Uses transaction memos to
+   * discover ephemeral public keys.
+   * 
+   * MVP Implementation:
+   * - Scans transaction memos for ephemeral keys in format: STEALTH:<public_key>
+   * - Caches results to avoid redundant scanning
+   * - Supports scanning specific stealth addresses or all transactions
    * 
    * @param connection - Solana connection
+   * @param stealthAddress - Optional stealth address to scan for
    * @param startSlot - Optional starting slot for scanning
    * @param endSlot - Optional ending slot for scanning
    * @returns Array of ephemeral keys found on-chain
    */
   async fetchEphemeralKeysFromBlockchain(
     connection: any,
+    stealthAddress?: PublicKey,
     startSlot?: number,
     endSlot?: number
   ): Promise<EphemeralKey[]> {
     try {
-      // TODO: Implement actual blockchain scanning
-      // This would involve:
-      // 1. Scanning transactions in the specified slot range
-      // 2. Parsing transaction data for ephemeral public keys
-      // 3. Extracting ephemeral keys from memo or dedicated program data
-      // 4. Building index of ephemeral keys with their transaction signatures
+      // Use the blockchain scanner to fetch ephemeral keys
+      const ephemeralKeys = await this.scanner.fetchEphemeralKeys(
+        connection,
+        stealthAddress,
+        startSlot,
+        endSlot
+      );
       
-      // For now, return empty array as placeholder
-      // In production, this would use an indexer or scan transaction logs
-      console.warn('⚠️  fetchEphemeralKeysFromBlockchain is a placeholder - implement blockchain scanning');
-      return [];
+      return ephemeralKeys;
       
     } catch (error) {
       throw new PrivacyError(
@@ -305,6 +322,7 @@ export class StealthAddressManager {
    * @param connection - Solana connection
    * @param metaAddress - User's stealth meta-address
    * @param viewPrivateKey - User's view private key
+   * @param stealthAddress - Optional specific stealth address to scan for
    * @param startSlot - Optional starting slot for scanning
    * @param endSlot - Optional ending slot for scanning
    * @returns Array of detected stealth payments
@@ -313,6 +331,7 @@ export class StealthAddressManager {
     connection: any,
     metaAddress: StealthMetaAddress,
     viewPrivateKey: Uint8Array,
+    stealthAddress?: PublicKey,
     startSlot?: number,
     endSlot?: number
   ): Promise<StealthPayment[]> {
@@ -320,6 +339,7 @@ export class StealthAddressManager {
       // Fetch ephemeral keys from blockchain
       const ephemeralKeys = await this.fetchEphemeralKeysFromBlockchain(
         connection,
+        stealthAddress,
         startSlot,
         endSlot
       );
@@ -333,6 +353,15 @@ export class StealthAddressManager {
         error instanceof Error ? error : undefined
       );
     }
+  }
+
+  /**
+   * Get scanner instance for advanced usage
+   * 
+   * @returns Blockchain scanner instance
+   */
+  getScanner(): BlockchainScanner {
+    return this.scanner;
   }
 
   // Private helper methods

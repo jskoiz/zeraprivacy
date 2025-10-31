@@ -32,7 +32,7 @@ export function normalizeWallet(wallet?: Keypair | WalletAdapter): ExtendedWalle
   if (!wallet) {
   try {
     // Use anchor's wallet utility for CLI environments
-    const anchorWallet = anchor.utils.wallet();
+    const anchorWallet = (anchor.utils as any).wallet();
     return {
       publicKey: anchorWallet.publicKey,
       rawKeypair: undefined, // CLI wallet doesn't expose raw Keypair either
@@ -53,12 +53,18 @@ export function normalizeWallet(wallet?: Keypair | WalletAdapter): ExtendedWalle
     return {
       publicKey: wallet.publicKey,
       rawKeypair: wallet, // Store the raw Keypair for stateless.js operations
-      signTransaction: async <T extends Transaction>(tx: T): Promise<T> => {
-        tx.sign(wallet);
+      signTransaction: async <T>(tx: T): Promise<T> => {
+        if (tx instanceof Transaction) {
+          tx.sign(wallet);
+        }
         return tx;
       },
-      signAllTransactions: async <T extends Transaction>(txs: T[]): Promise<T[]> => {
-        txs.forEach(tx => tx.sign(wallet));
+      signAllTransactions: async <T>(txs: T[]): Promise<T[]> => {
+        txs.forEach(tx => {
+          if (tx instanceof Transaction) {
+            tx.sign(wallet);
+          }
+        });
         return txs;
       },
       signMessage: async (message: Uint8Array): Promise<Uint8Array> => {
@@ -67,10 +73,10 @@ export function normalizeWallet(wallet?: Keypair | WalletAdapter): ExtendedWalle
         fakeTx.add({
           keys: [],
           programId: new PublicKey('11111111111111111111111111111111'),
-          data: message
+          data: Buffer.from(message)
         });
         fakeTx.sign(wallet);
-        return fakeTx.signature!;
+        return Buffer.from(fakeTx.signature!);
       }
     };
   }
