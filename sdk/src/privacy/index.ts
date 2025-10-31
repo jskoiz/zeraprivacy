@@ -19,6 +19,12 @@ export { ConfidentialTransferManager } from './confidential-transfer';
 export { EncryptionUtils } from './encryption';
 export { ViewingKeyManager, ViewingKeyConfig } from './viewing-keys';
 export { StealthAddressManager } from './stealth-address';
+export { 
+  BlockchainScanner,
+  createStealthAddressMemo,
+  parseStealthAddressMemo
+} from './blockchain-scanner';
+export type { ScannerConfig, ScanResult } from './blockchain-scanner';
 
 // Type exports
 export type {
