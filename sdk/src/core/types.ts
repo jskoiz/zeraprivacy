@@ -131,7 +131,7 @@ export const NETWORKS: Record<string, NetworkConfig> = {
  * Light Protocol ZK Compression RPC endpoints
  * These are required for ZK Compression operations
  */
-export const LIGHT_PROTOCOL_RPC_ENDPOINTS = {
-  devnet: 'https://devnet.helius-rpc.com/?api-key=7bab09d6-6b6b-4e9a-b0dd-7b2c7f6977bf',
-  mainnet: 'https://mainnet.helius-rpc.com/?api-key=7bab09d6-6b6b-4e9a-b0dd-7b2c7f6977bf'
+export const LIGHT_PROTOCOL_RPC_ENDPOINTS: Record<'devnet' | 'mainnet-beta', string> = {
+  'devnet': 'https://devnet.helius-rpc.com/?api-key=7bab09d6-6b6b-4e9a-b0dd-7b2c7f6977bf',
+  'mainnet-beta': 'https://mainnet.helius-rpc.com/?api-key=7bab09d6-6b6b-4e9a-b0dd-7b2c7f6977bf'
 };

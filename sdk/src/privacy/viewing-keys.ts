@@ -542,7 +542,11 @@ export class ViewingKeyManager {
       ['encrypt']
     );
     const ct = new Uint8Array(
-      await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv as BufferSource }, cryptoKey, plaintext as BufferSource)
+      await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv: iv as BufferSource },
+        cryptoKey,
+        plaintext as BufferSource
+      )
     );
     return ct;
   }
@@ -560,7 +564,11 @@ export class ViewingKeyManager {
       ['decrypt']
     );
     const pt = new Uint8Array(
-      await crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv as BufferSource }, cryptoKey, sealed as BufferSource)
+      await crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv: iv as BufferSource },
+        cryptoKey,
+        sealed as BufferSource
+      )
     );
     return pt;
   }
