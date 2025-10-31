@@ -18,6 +18,7 @@ export { GhostSolPrivacy } from './ghost-sol-privacy';
 export { ConfidentialTransferManager } from './confidential-transfer';
 export { EncryptionUtils } from './encryption';
 export { ViewingKeyManager, ViewingKeyConfig } from './viewing-keys';
+export { StealthAddressManager } from './stealth-address';
 
 // Type exports
 export type {
@@ -28,7 +29,11 @@ export type {
   PrivacyMode,
   ZKProof,
   ConfidentialMint,
-  ConfidentialAccount
+  ConfidentialAccount,
+  StealthMetaAddress,
+  StealthAddress,
+  EphemeralKey,
+  StealthPayment
 } from './types';
 
 // Error exports  
@@ -36,5 +41,6 @@ export {
   PrivacyError,
   EncryptionError,
   ProofGenerationError,
-  ViewingKeyError
+  ViewingKeyError,
+  StealthAddressError
 } from './errors';

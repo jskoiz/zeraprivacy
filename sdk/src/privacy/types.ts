@@ -177,3 +177,91 @@ export interface PrivacySdkConfig {
   /** Commitment level */
   commitment?: 'processed' | 'confirmed' | 'finalized';
 }
+
+/**
+ * Stealth meta-address for receiving unlinkable payments
+ * 
+ * A meta-address is publicly shared information that allows senders
+ * to generate unique stealth addresses for payments.
+ */
+export interface StealthMetaAddress {
+  /** View public key (for detecting payments) */
+  viewPublicKey: PublicKey;
+  /** Spend public key (for spending payments) */
+  spendPublicKey: PublicKey;
+  /** Derivation path used */
+  derivationPath: string;
+  /** Version of the stealth address protocol */
+  version: number;
+  /** Creation timestamp */
+  createdAt: number;
+}
+
+/**
+ * Stealth address for a specific payment
+ * 
+ * Each payment uses a unique stealth address that is unlinkable
+ * to other payments or the recipient's identity.
+ */
+export interface StealthAddress {
+  /** The actual stealth address (one-time payment address) */
+  address: PublicKey;
+  /** Ephemeral public key published with payment */
+  ephemeralPublicKey: PublicKey;
+  /** Hash of shared secret (for verification) */
+  sharedSecretHash: string;
+  /** Original meta-address used */
+  metaAddress: StealthMetaAddress;
+  /** Creation timestamp */
+  createdAt: number;
+}
+
+/**
+ * Ephemeral key published alongside stealth payment
+ * 
+ * The ephemeral public key allows the recipient to compute
+ * the shared secret and detect the payment.
+ */
+export interface EphemeralKey {
+  /** Ephemeral public key (published on-chain) */
+  publicKey: PublicKey;
+  /** Encrypted ephemeral private key (for sender) */
+  encryptedPrivateKey: Uint8Array;
+  /** Transaction signature where this key was used */
+  transactionSignature: string;
+  /** Creation timestamp */
+  createdAt: number;
+}
+
+/**
+ * Detected stealth payment
+ * 
+ * Represents a payment that was detected by scanning the blockchain
+ * for stealth addresses belonging to the user.
+ */
+export interface StealthPayment {
+  /** Stealth address where payment was received */
+  stealthAddress: PublicKey;
+  /** Ephemeral public key from the payment */
+  ephemeralPublicKey: PublicKey;
+  /** Shared secret (computed by recipient) */
+  sharedSecret: Buffer;
+  /** Transaction signature */
+  transactionSignature: string;
+  /** Payment amount (in lamports) */
+  amount: number;
+  /** When the payment was detected */
+  detectedAt: number;
+  /** Whether the payment has been spent */
+  spent: boolean;
+}
+
+/**
+ * Error type for stealth address operations
+ */
+export class StealthAddressError extends Error {
+  constructor(message: string, public cause?: Error) {
+    super(message);
+    this.name = 'StealthAddressError';
+  }
+}

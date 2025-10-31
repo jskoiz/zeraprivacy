@@ -102,3 +102,13 @@ export class ComplianceError extends PrivacyError {
     this.name = 'ComplianceError';
   }
 }
+
+/**
+ * Error thrown when stealth address operations fail
+ */
+export class StealthAddressError extends PrivacyError {
+  constructor(message: string, cause?: Error) {
+    super(`Stealth address error: ${message}`, cause);
+    this.name = 'StealthAddressError';
+  }
+}

@@ -24,7 +24,11 @@ import {
   ConfidentialMint,
   ConfidentialAccount,
   ViewingKey,
-  ZKProof
+  ZKProof,
+  StealthMetaAddress,
+  StealthAddress,
+  EphemeralKey,
+  StealthPayment
 } from './types';
 import { 
   PrivacyError, 
@@ -36,6 +40,7 @@ import {
 import { ConfidentialTransferManager } from './confidential-transfer';
 import { EncryptionUtils } from './encryption';
 import { ViewingKeyManager, ViewingKeyConfig } from './viewing-keys';
+import { StealthAddressManager } from './stealth-address';
 import { ExtendedWalletAdapter } from '../core/types';
 
 /**
@@ -52,6 +57,7 @@ export class GhostSolPrivacy {
   private confidentialTransferManager!: ConfidentialTransferManager;
   private encryptionUtils!: EncryptionUtils;
   private viewingKeyManager!: ViewingKeyManager;
+  private stealthAddressManager!: StealthAddressManager;
   private confidentialMint?: ConfidentialMint;
   private confidentialAccount?: ConfidentialAccount;
   private initialized = false;
@@ -84,6 +90,7 @@ export class GhostSolPrivacy {
         connection, 
         wallet
       );
+      this.stealthAddressManager = new StealthAddressManager();
       
       if (config.enableViewingKeys) {
         this.viewingKeyManager = new ViewingKeyManager(wallet);
@@ -456,6 +463,143 @@ export class GhostSolPrivacy {
     }
     
     return this.viewingKeyManager.isViewingKeyValid(viewingKey);
+  }
+
+  // Stealth Address Methods
+
+  /**
+   * Generate a stealth meta-address for receiving unlinkable payments
+   * 
+   * The meta-address can be publicly shared to receive payments.
+   * Each payment will use a unique stealth address that is unlinkable on-chain.
+   * 
+   * @param viewKeypair - Optional view keypair (generated if not provided)
+   * @param spendKeypair - Optional spend keypair (generated if not provided)
+   * @returns Stealth meta-address
+   */
+  generateStealthMetaAddress(
+    viewKeypair?: Keypair,
+    spendKeypair?: Keypair
+  ): StealthMetaAddress {
+    this._assertInitialized();
+    
+    try {
+      const viewKey = viewKeypair || Keypair.generate();
+      return this.stealthAddressManager.generateStealthMetaAddress(viewKey, spendKeypair);
+    } catch (error) {
+      throw new PrivacyError(
+        `Failed to generate stealth meta-address: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error : undefined
+      );
+    }
+  }
+
+  /**
+   * Generate a unique stealth address for a payment
+   * 
+   * Creates a one-time address that only the recipient can link to their identity.
+   * The sender publishes the ephemeral public key alongside the payment.
+   * 
+   * @param recipientMetaAddress - Recipient's stealth meta-address
+   * @param ephemeralKeypair - Optional ephemeral keypair (generated if not provided)
+   * @returns Stealth address and ephemeral key
+   */
+  generateStealthAddress(
+    recipientMetaAddress: StealthMetaAddress,
+    ephemeralKeypair?: Keypair
+  ): { stealthAddress: StealthAddress; ephemeralKey: EphemeralKey } {
+    this._assertInitialized();
+    
+    try {
+      return this.stealthAddressManager.generateStealthAddress(
+        recipientMetaAddress,
+        ephemeralKeypair
+      );
+    } catch (error) {
+      throw new PrivacyError(
+        `Failed to generate stealth address: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error : undefined
+      );
+    }
+  }
+
+  /**
+   * Scan for payments to stealth addresses
+   * 
+   * Checks a list of ephemeral public keys from the blockchain to detect
+   * payments made to the user's stealth addresses.
+   * 
+   * @param metaAddress - User's stealth meta-address
+   * @param viewPrivateKey - User's view private key
+   * @param ephemeralKeys - List of ephemeral keys from blockchain
+   * @returns Array of detected stealth payments
+   */
+  async scanForPayments(
+    metaAddress: StealthMetaAddress,
+    viewPrivateKey: Uint8Array,
+    ephemeralKeys: EphemeralKey[]
+  ): Promise<StealthPayment[]> {
+    this._assertInitialized();
+    
+    try {
+      return await this.stealthAddressManager.scanForPayments(
+        metaAddress,
+        viewPrivateKey,
+        ephemeralKeys
+      );
+    } catch (error) {
+      throw new PrivacyError(
+        `Failed to scan for payments: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error : undefined
+      );
+    }
+  }
+
+  /**
+   * Derive spending key for a detected stealth payment
+   * 
+   * Computes the private key needed to spend from a detected stealth address.
+   * 
+   * @param payment - Detected stealth payment
+   * @param spendPrivateKey - User's spend private key
+   * @returns Private key for spending the stealth payment
+   */
+  deriveStealthSpendingKey(
+    payment: StealthPayment,
+    spendPrivateKey: Uint8Array
+  ): Uint8Array {
+    this._assertInitialized();
+    
+    try {
+      return this.stealthAddressManager.deriveStealthSpendingKey(payment, spendPrivateKey);
+    } catch (error) {
+      throw new PrivacyError(
+        `Failed to derive spending key: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error : undefined
+      );
+    }
+  }
+
+  /**
+   * Verify that a stealth address was correctly generated
+   * 
+   * @param stealthAddress - Stealth address to verify
+   * @param metaAddress - Original meta-address
+   * @param ephemeralPublicKey - Ephemeral public key used
+   * @returns true if valid, false otherwise
+   */
+  verifyStealthAddress(
+    stealthAddress: PublicKey,
+    metaAddress: StealthMetaAddress,
+    ephemeralPublicKey: PublicKey
+  ): boolean {
+    this._assertInitialized();
+    
+    return this.stealthAddressManager.verifyStealthAddress(
+      stealthAddress,
+      metaAddress,
+      ephemeralPublicKey
+    );
   }
 
   // Private helper methods

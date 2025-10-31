@@ -221,6 +221,80 @@ export async function createConfidentialAccount(mint?: PublicKey): Promise<Publi
   return await privacyInstance!.createConfidentialAccount(mint);
 }
 
+// Stealth Address Functions (privacy mode only)
+
+/**
+ * Generate a stealth meta-address (privacy mode only)
+ * 
+ * Creates a meta-address that can be publicly shared to receive
+ * unlinkable payments via stealth addresses.
+ * 
+ * @param viewKeypair - Optional view keypair (generated if not provided)
+ * @param spendKeypair - Optional spend keypair (generated if not provided)
+ * @returns Stealth meta-address
+ * @throws GhostSolError if not in privacy mode
+ */
+export function generateStealthMetaAddress(viewKeypair?: any, spendKeypair?: any): any {
+  _assertPrivacyMode();
+  
+  return privacyInstance!.generateStealthMetaAddress(viewKeypair, spendKeypair);
+}
+
+/**
+ * Generate a unique stealth address for a payment (privacy mode only)
+ * 
+ * Creates a one-time address for sending a payment that maintains
+ * complete on-chain unlinkability.
+ * 
+ * @param recipientMetaAddress - Recipient's stealth meta-address
+ * @param ephemeralKeypair - Optional ephemeral keypair (generated if not provided)
+ * @returns Stealth address and ephemeral key
+ * @throws GhostSolError if not in privacy mode
+ */
+export function generateStealthAddress(recipientMetaAddress: any, ephemeralKeypair?: any): any {
+  _assertPrivacyMode();
+  
+  return privacyInstance!.generateStealthAddress(recipientMetaAddress, ephemeralKeypair);
+}
+
+/**
+ * Scan for payments to stealth addresses (privacy mode only)
+ * 
+ * Checks the blockchain for payments made to the user's stealth addresses
+ * by scanning ephemeral public keys.
+ * 
+ * @param metaAddress - User's stealth meta-address
+ * @param viewPrivateKey - User's view private key
+ * @param ephemeralKeys - List of ephemeral keys from blockchain
+ * @returns Array of detected stealth payments
+ * @throws GhostSolError if not in privacy mode
+ */
+export async function scanForPayments(
+  metaAddress: any,
+  viewPrivateKey: Uint8Array,
+  ephemeralKeys: any[]
+): Promise<any[]> {
+  _assertPrivacyMode();
+  
+  return await privacyInstance!.scanForPayments(metaAddress, viewPrivateKey, ephemeralKeys);
+}
+
+/**
+ * Derive spending key for a detected stealth payment (privacy mode only)
+ * 
+ * Computes the private key needed to spend from a detected stealth address.
+ * 
+ * @param payment - Detected stealth payment
+ * @param spendPrivateKey - User's spend private key
+ * @returns Private key for spending the stealth payment
+ * @throws GhostSolError if not in privacy mode
+ */
+export function deriveStealthSpendingKey(payment: any, spendPrivateKey: Uint8Array): Uint8Array {
+  _assertPrivacyMode();
+  
+  return privacyInstance!.deriveStealthSpendingKey(payment, spendPrivateKey);
+}
+
 // Backward compatibility functions (efficiency mode)
 
 /**
@@ -343,7 +417,11 @@ export type {
   EncryptedBalance,
   EncryptedAmount, 
   ViewingKey,
-  PrivateTransferResult
+  PrivateTransferResult,
+  StealthMetaAddress,
+  StealthAddress,
+  EphemeralKey,
+  StealthPayment
 } from './privacy/types';
 
 // Export error classes
@@ -359,5 +437,6 @@ export {
   PrivacyError,
   EncryptionError,
   ProofGenerationError,
-  ViewingKeyError
+  ViewingKeyError,
+  StealthAddressError
 } from './privacy/errors';
