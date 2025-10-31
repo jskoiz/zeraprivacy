@@ -15,7 +15,8 @@
  * - Integration with existing SDK
  */
 
-import { Connection, PublicKey, Keypair } from '@solana/web3.js';
+import { Connection, PublicKey, Keypair, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { NATIVE_MINT } from '@solana/spl-token';
 import { 
   PrivacyConfig, 
   EncryptedBalance, 
@@ -37,6 +38,7 @@ import { ConfidentialTransferManager } from './confidential-transfer';
 import { EncryptionUtils } from './encryption';
 import { ViewingKeyManager } from './viewing-keys';
 import { ExtendedWalletAdapter } from '../core/types';
+import { WsolWrapper } from '../core/wsol-wrapper';
 
 /**
  * Main privacy class for true transaction privacy on Solana
@@ -52,6 +54,7 @@ export class GhostSolPrivacy {
   private confidentialTransferManager!: ConfidentialTransferManager;
   private encryptionUtils!: EncryptionUtils;
   private viewingKeyManager!: ViewingKeyManager;
+  private wsolWrapper!: WsolWrapper;
   private confidentialMint?: ConfidentialMint;
   private confidentialAccount?: ConfidentialAccount;
   private initialized = false;
@@ -84,6 +87,7 @@ export class GhostSolPrivacy {
         connection, 
         wallet
       );
+      this.wsolWrapper = new WsolWrapper(connection, wallet);
       
       if (config.enableViewingKeys) {
         this.viewingKeyManager = new ViewingKeyManager(wallet);
@@ -183,33 +187,51 @@ export class GhostSolPrivacy {
   /**
    * Deposit SOL into the privacy pool (encrypted)
    * This is the equivalent of "shield" but with true privacy
+   * 
+   * Users interact with native SOL, but under the hood:
+   * 1. Native SOL is wrapped to wSOL
+   * 2. wSOL is deposited to confidential account
+   * 3. Users see: "Preparing SOL for private transfer..."
+   * 
+   * @param amountLamports - Amount of SOL to deposit in lamports
+   * @returns Transaction signature
    */
-  async encryptedDeposit(amount: number): Promise<string> {
+  async encryptedDeposit(amountLamports: number): Promise<string> {
     this._assertInitialized();
-    this._assertConfidentialAccount();
     
     try {
-      // Generate encrypted amount
+      // Step 1: Wrap SOL → wSOL automatically (users don't see this)
+      console.log('Preparing SOL for private transfer...');
+      const wsolAccount = await this.wsolWrapper.wrapSol(amountLamports);
+      
+      // Step 2: Get or create confidential wSOL account (not native SOL)
+      // Use NATIVE_MINT which represents wSOL
+      const confidentialAccount = await this.getOrCreateConfidentialAccount(NATIVE_MINT);
+      
+      // Step 3: Deposit wSOL to confidential account
       const encryptedAmount = await this.encryptionUtils.encryptAmount(
-        BigInt(amount),
+        BigInt(amountLamports),
         this.wallet.publicKey
       );
       
       // Generate zero-knowledge proof for deposit validity
-      const zkProof = await this._generateDepositProof(amount, encryptedAmount);
+      const zkProof = await this._generateDepositProof(amountLamports, encryptedAmount);
       
-      // Execute confidential deposit
+      // Execute confidential deposit using wSOL account
       const signature = await this.confidentialTransferManager.deposit(
-        this.confidentialAccount!.address,
+        confidentialAccount,
         encryptedAmount,
         zkProof
       );
+      
+      // Step 4: User-facing message
+      console.log(`SOL now private (${(amountLamports / LAMPORTS_PER_SOL).toFixed(4)} SOL)`);
       
       return signature;
       
     } catch (error) {
       throw new PrivacyError(
-        `Encrypted deposit failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to deposit SOL: ${error instanceof Error ? error.message : 'Unknown error'}`,
         error instanceof Error ? error : undefined
       );
     }
@@ -267,36 +289,53 @@ export class GhostSolPrivacy {
   /**
    * Withdraw from privacy pool (encrypted withdrawal)
    * This is the equivalent of "unshield" but with true privacy
+   * 
+   * Users interact with native SOL, but under the hood:
+   * 1. Withdraw wSOL from confidential account
+   * 2. wSOL is unwrapped to native SOL
+   * 3. Users see: "Withdrawing SOL..."
+   * 
+   * @param amountLamports - Amount of SOL to withdraw in lamports
+   * @param destination - Optional destination address (defaults to wallet)
+   * @returns Transaction signature
    */
-  async encryptedWithdraw(amount: number, destination?: PublicKey): Promise<string> {
+  async encryptedWithdraw(amountLamports: number, destination?: PublicKey): Promise<string> {
     this._assertInitialized();
     this._assertConfidentialAccount();
     
     try {
       const withdrawalDestination = destination || this.wallet.publicKey;
       
-      // Generate encrypted amount for withdrawal
+      console.log('Withdrawing SOL from private balance...');
+      
+      // Step 1: Withdraw from confidential wSOL account
       const encryptedAmount = await this.encryptionUtils.encryptAmount(
-        BigInt(amount),
+        BigInt(amountLamports),
         withdrawalDestination
       );
       
       // Generate zero-knowledge proof for withdrawal validity  
-      const zkProof = await this._generateWithdrawProof(amount, encryptedAmount);
+      const zkProof = await this._generateWithdrawProof(amountLamports, encryptedAmount);
       
-      // Execute confidential withdrawal
-      const signature = await this.confidentialTransferManager.withdraw(
+      // Execute confidential withdrawal (this gives us wSOL)
+      const withdrawSignature = await this.confidentialTransferManager.withdraw(
         this.confidentialAccount!.address,
         withdrawalDestination,
         encryptedAmount,
         zkProof
       );
       
-      return signature;
+      // Step 2: Unwrap wSOL → SOL automatically (users don't see this)
+      const unwrapSignature = await this.wsolWrapper.unwrapSol();
+      
+      console.log(`SOL withdrawn (${(amountLamports / LAMPORTS_PER_SOL).toFixed(4)} SOL)`);
+      
+      // Return the unwrap signature (final transaction)
+      return unwrapSignature;
       
     } catch (error) {
       throw new PrivacyError(
-        `Encrypted withdrawal failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to withdraw SOL: ${error instanceof Error ? error.message : 'Unknown error'}`,
         error instanceof Error ? error : undefined
       );
     }
@@ -373,6 +412,79 @@ export class GhostSolPrivacy {
         `Failed to generate viewing key: ${error instanceof Error ? error.message : 'Unknown error'}`,
         error instanceof Error ? error : undefined
       );
+    }
+  }
+
+  /**
+   * Get or create a confidential account for a specific mint
+   * This is used internally to manage wSOL confidential accounts
+   * 
+   * @param mint - The mint address (e.g., NATIVE_MINT for wSOL)
+   * @returns The confidential account address
+   */
+  async getOrCreateConfidentialAccount(mint: PublicKey): Promise<PublicKey> {
+    this._assertInitialized();
+    
+    try {
+      // Check if we already have a confidential account for this mint
+      if (this.confidentialAccount && this.confidentialAccount.mint.equals(mint)) {
+        return this.confidentialAccount.address;
+      }
+      
+      // Create new confidential account for this mint
+      return await this.createConfidentialAccount(mint);
+      
+    } catch (error) {
+      throw new ConfidentialAccountError(
+        `Failed to get or create confidential account: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error : undefined
+      );
+    }
+  }
+
+  /**
+   * Optimized deposit that tries to batch wrap + deposit in a single transaction
+   * Falls back to two transactions if batching fails
+   * 
+   * @param amountLamports - Amount of SOL to deposit in lamports
+   * @returns Transaction signature
+   */
+  async optimizedDeposit(amountLamports: number): Promise<string> {
+    this._assertInitialized();
+    
+    try {
+      // Try to batch wrap + deposit in a single transaction
+      // This saves time and transaction fees
+      console.log('Preparing SOL for private transfer (optimized)...');
+      
+      // TODO: Implement batched transaction
+      // For now, fall back to regular deposit
+      // In the future, this could combine wrap + deposit instructions
+      return await this.encryptedDeposit(amountLamports);
+      
+    } catch (error) {
+      throw new PrivacyError(
+        `Optimized deposit failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error : undefined
+      );
+    }
+  }
+
+  /**
+   * Clean up any orphaned wSOL accounts to prevent dust
+   * Should be called after withdraw operations
+   * 
+   * @returns Transaction signature if cleanup was performed, null if nothing to clean
+   */
+  async cleanupWsolAccounts(): Promise<string | null> {
+    this._assertInitialized();
+    
+    try {
+      return await this.wsolWrapper.cleanupWsolAccounts();
+    } catch (error) {
+      // Non-critical error, just log it
+      console.warn('Failed to cleanup wSOL accounts:', error);
+      return null;
     }
   }
 

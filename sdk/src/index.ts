@@ -361,3 +361,6 @@ export {
   ProofGenerationError,
   ViewingKeyError
 } from './privacy/errors';
+
+// Export WsolWrapper for advanced users
+export { WsolWrapper } from './core/wsol-wrapper';
