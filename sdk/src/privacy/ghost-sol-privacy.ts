@@ -602,6 +602,72 @@ export class GhostSolPrivacy {
     );
   }
 
+  /**
+   * Fetch ephemeral keys from blockchain transactions
+   * 
+   * Scans the blockchain for transactions containing ephemeral keys published
+   * alongside stealth address payments.
+   * 
+   * @param startSlot - Optional starting slot for scanning
+   * @param endSlot - Optional ending slot for scanning
+   * @returns Array of ephemeral keys found on-chain
+   */
+  async fetchEphemeralKeysFromBlockchain(
+    startSlot?: number,
+    endSlot?: number
+  ): Promise<EphemeralKey[]> {
+    this._assertInitialized();
+    
+    try {
+      return await this.stealthAddressManager.fetchEphemeralKeysFromBlockchain(
+        this.connection,
+        startSlot,
+        endSlot
+      );
+    } catch (error) {
+      throw new PrivacyError(
+        `Failed to fetch ephemeral keys: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error : undefined
+      );
+    }
+  }
+
+  /**
+   * Scan blockchain for payments to stealth addresses
+   * 
+   * This is a convenience method that fetches ephemeral keys from the blockchain
+   * and scans for payments in one operation.
+   * 
+   * @param metaAddress - User's stealth meta-address
+   * @param viewPrivateKey - User's view private key
+   * @param startSlot - Optional starting slot for scanning
+   * @param endSlot - Optional ending slot for scanning
+   * @returns Array of detected stealth payments
+   */
+  async scanBlockchainForPayments(
+    metaAddress: StealthMetaAddress,
+    viewPrivateKey: Uint8Array,
+    startSlot?: number,
+    endSlot?: number
+  ): Promise<StealthPayment[]> {
+    this._assertInitialized();
+    
+    try {
+      return await this.stealthAddressManager.scanBlockchainForPayments(
+        this.connection,
+        metaAddress,
+        viewPrivateKey,
+        startSlot,
+        endSlot
+      );
+    } catch (error) {
+      throw new PrivacyError(
+        `Failed to scan blockchain for payments: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error : undefined
+      );
+    }
+  }
+
   // Private helper methods
   
   private async _initializeConfidentialMint(): Promise<void> {

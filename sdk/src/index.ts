@@ -295,6 +295,79 @@ export function deriveStealthSpendingKey(payment: any, spendPrivateKey: Uint8Arr
   return privacyInstance!.deriveStealthSpendingKey(payment, spendPrivateKey);
 }
 
+/**
+ * Verify that a stealth address was correctly generated (privacy mode only)
+ * 
+ * Performs validation checks to ensure the stealth address is valid and
+ * correctly derived from the meta-address and ephemeral public key.
+ * 
+ * @param stealthAddress - Stealth address to verify
+ * @param metaAddress - Original meta-address
+ * @param ephemeralPublicKey - Ephemeral public key used
+ * @returns true if valid, false otherwise
+ * @throws GhostSolError if not in privacy mode
+ */
+export function verifyStealthAddress(
+  stealthAddress: PublicKey,
+  metaAddress: any,
+  ephemeralPublicKey: PublicKey
+): boolean {
+  _assertPrivacyMode();
+  
+  return privacyInstance!.verifyStealthAddress(stealthAddress, metaAddress, ephemeralPublicKey);
+}
+
+/**
+ * Fetch ephemeral keys from blockchain transactions (privacy mode only)
+ * 
+ * Scans the blockchain for transactions containing ephemeral keys published
+ * alongside stealth address payments. This is useful for discovering payments
+ * made to your stealth addresses.
+ * 
+ * @param startSlot - Optional starting slot for scanning (default: scan recent blocks)
+ * @param endSlot - Optional ending slot for scanning (default: current slot)
+ * @returns Array of ephemeral keys found on-chain
+ * @throws GhostSolError if not in privacy mode
+ */
+export async function fetchEphemeralKeysFromBlockchain(
+  startSlot?: number,
+  endSlot?: number
+): Promise<any[]> {
+  _assertPrivacyMode();
+  
+  return await privacyInstance!.fetchEphemeralKeysFromBlockchain(startSlot, endSlot);
+}
+
+/**
+ * Scan blockchain for payments to stealth addresses (privacy mode only)
+ * 
+ * This is a convenience method that fetches ephemeral keys from the blockchain
+ * and scans for payments in one operation. This is the easiest way to discover
+ * payments made to your stealth addresses without manually fetching ephemeral keys.
+ * 
+ * @param metaAddress - User's stealth meta-address
+ * @param viewPrivateKey - User's view private key
+ * @param startSlot - Optional starting slot for scanning
+ * @param endSlot - Optional ending slot for scanning
+ * @returns Array of detected stealth payments
+ * @throws GhostSolError if not in privacy mode
+ */
+export async function scanBlockchainForPayments(
+  metaAddress: any,
+  viewPrivateKey: Uint8Array,
+  startSlot?: number,
+  endSlot?: number
+): Promise<any[]> {
+  _assertPrivacyMode();
+  
+  return await privacyInstance!.scanBlockchainForPayments(
+    metaAddress,
+    viewPrivateKey,
+    startSlot,
+    endSlot
+  );
+}
+
 // Backward compatibility functions (efficiency mode)
 
 /**

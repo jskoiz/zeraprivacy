@@ -258,6 +258,83 @@ export class StealthAddressManager {
     }
   }
 
+  /**
+   * Fetch ephemeral keys from blockchain transactions
+   * 
+   * This method scans the blockchain for transactions containing ephemeral keys
+   * published alongside stealth address payments. In a full implementation, this
+   * would parse transaction data or use a dedicated indexer.
+   * 
+   * @param connection - Solana connection
+   * @param startSlot - Optional starting slot for scanning
+   * @param endSlot - Optional ending slot for scanning
+   * @returns Array of ephemeral keys found on-chain
+   */
+  async fetchEphemeralKeysFromBlockchain(
+    connection: any,
+    startSlot?: number,
+    endSlot?: number
+  ): Promise<EphemeralKey[]> {
+    try {
+      // TODO: Implement actual blockchain scanning
+      // This would involve:
+      // 1. Scanning transactions in the specified slot range
+      // 2. Parsing transaction data for ephemeral public keys
+      // 3. Extracting ephemeral keys from memo or dedicated program data
+      // 4. Building index of ephemeral keys with their transaction signatures
+      
+      // For now, return empty array as placeholder
+      // In production, this would use an indexer or scan transaction logs
+      console.warn('⚠️  fetchEphemeralKeysFromBlockchain is a placeholder - implement blockchain scanning');
+      return [];
+      
+    } catch (error) {
+      throw new PrivacyError(
+        `Failed to fetch ephemeral keys from blockchain: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error : undefined
+      );
+    }
+  }
+
+  /**
+   * Scan blockchain for payments to stealth addresses
+   * 
+   * This is a convenience method that fetches ephemeral keys from the blockchain
+   * and scans for payments in one operation.
+   * 
+   * @param connection - Solana connection
+   * @param metaAddress - User's stealth meta-address
+   * @param viewPrivateKey - User's view private key
+   * @param startSlot - Optional starting slot for scanning
+   * @param endSlot - Optional ending slot for scanning
+   * @returns Array of detected stealth payments
+   */
+  async scanBlockchainForPayments(
+    connection: any,
+    metaAddress: StealthMetaAddress,
+    viewPrivateKey: Uint8Array,
+    startSlot?: number,
+    endSlot?: number
+  ): Promise<StealthPayment[]> {
+    try {
+      // Fetch ephemeral keys from blockchain
+      const ephemeralKeys = await this.fetchEphemeralKeysFromBlockchain(
+        connection,
+        startSlot,
+        endSlot
+      );
+      
+      // Scan for payments using the fetched keys
+      return await this.scanForPayments(metaAddress, viewPrivateKey, ephemeralKeys);
+      
+    } catch (error) {
+      throw new PrivacyError(
+        `Failed to scan blockchain for payments: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error : undefined
+      );
+    }
+  }
+
   // Private helper methods
 
   /**
