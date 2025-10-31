@@ -2,7 +2,6 @@
   "name": "ghost-sol",
   "version": "0.1.0",
   "description": "Privacy SDK for Solana developers using ZK Compression",
-  "private": true,
   "workspaces": [
     "sdk",
     "examples/nextjs-demo"
