@@ -40,6 +40,8 @@ import {
   decompressTokens 
 } from './compression';
 import { loadAndValidateConfig, validateNoSensitiveExposure, EnvConfigError } from './env-config';
+import { loadRpcConfig, createRpcConfigFromUrl } from './rpc-config';
+import { RpcManager, createRpcManager } from './rpc-manager';
 
 /**
  * Main GhostSol SDK class providing privacy-focused Solana operations
@@ -53,6 +55,7 @@ export class GhostSol {
   private wallet!: ExtendedWalletAdapter;
   private relayer!: Relayer;
   private balanceCache!: BalanceCache;
+  private rpcManager?: RpcManager;
   private initialized: boolean = false;
 
   /**
@@ -91,7 +94,7 @@ export class GhostSol {
       } catch (error) {
         // If env config fails but explicit config is provided, use explicit config
         // This allows SDK to work without env vars if all config is provided explicitly
-        if (!config.rpcUrl && !config.cluster) {
+        if (!config.rpcUrl && !config.cluster && !config.rpcConfig) {
           throw new GhostSolError(
             `Environment configuration validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
             'CONFIG_ERROR',
@@ -113,33 +116,64 @@ export class GhostSol {
         throw new GhostSolError(`Unsupported cluster: ${cluster}`, 'CONFIG_ERROR');
       }
 
-      // Create Solana connection
-      // Prefer explicit config, then env config, then network defaults
-      const rpcUrl = config.rpcUrl || envConfig?.rpcUrl || networkConfig.rpcUrl;
-      
-      // Validate RPC URL format
-      try {
-        new URL(rpcUrl);
-      } catch {
-        throw new GhostSolError(
-          `Invalid RPC URL format: ${rpcUrl}. Must be a valid HTTP or HTTPS URL.`,
-          'CONFIG_ERROR'
-        );
+      // Initialize RPC manager if advanced config is provided
+      if (config.rpcConfig) {
+        this.rpcManager = createRpcManager(config.rpcConfig);
+        this.connection = await this.rpcManager.getConnection();
+        this.rpc = await this.rpcManager.getZkRpc();
+      } else if (config.rpcUrl) {
+        // Simple URL-based configuration with basic fallback
+        const rpcConfig = createRpcConfigFromUrl(config.rpcUrl, cluster, {
+          commitment: config.commitment,
+        });
+        this.rpcManager = createRpcManager(rpcConfig);
+        this.connection = await this.rpcManager.getConnection();
+        this.rpc = await this.rpcManager.getZkRpc();
+      } else {
+        // Load RPC configuration from environment variables
+        try {
+          const rpcConfig = loadRpcConfig(cluster, {
+            commitment: config.commitment,
+          });
+          this.rpcManager = createRpcManager(rpcConfig);
+          this.connection = await this.rpcManager.getConnection();
+          
+          // Try to get ZK RPC if available
+          try {
+            this.rpc = await this.rpcManager.getZkRpc();
+          } catch (zkError) {
+            console.warn('[GhostSol] ZK Compression RPC not available, using fallback');
+            // Fall back to regular connection-based RPC
+            const rpcConfigLegacy = createCompressedRpc({ ...config, cluster });
+            this.rpc = rpcConfigLegacy.rpc;
+          }
+        } catch (rpcConfigError) {
+          // Fallback to legacy configuration method
+          const rpcUrl = envConfig?.rpcUrl || networkConfig.rpcUrl;
+          
+          // Validate RPC URL format
+          try {
+            new URL(rpcUrl);
+          } catch {
+            throw new GhostSolError(
+              `Invalid RPC URL format: ${rpcUrl}. Must be a valid HTTP or HTTPS URL.`,
+              'CONFIG_ERROR'
+            );
+          }
+          
+          this.connection = new Connection(rpcUrl, {
+            commitment: config.commitment || networkConfig.commitment,
+            confirmTransactionInitialTimeout: 60000,
+          });
+
+          // Validate RPC connection
+          await validateRpcConnection(this.connection);
+
+          // Initialize ZK Compression RPC using legacy method
+          const rpcConfigLegacy = createCompressedRpc({ ...config, cluster });
+          this.rpc = rpcConfigLegacy.rpc;
+        }
       }
-      
-      this.connection = new Connection(rpcUrl, {
-        commitment: config.commitment || networkConfig.commitment,
-        confirmTransactionInitialTimeout: 60000,
-      });
-
-      // Validate RPC connection
-      await validateRpcConnection(this.connection);
-
-      // Initialize ZK Compression RPC
-      // Note: Based on research, the actual API may differ from the initial spec
-      // This will need to be adjusted based on the real @lightprotocol/stateless.js API
-      const rpcConfig = createCompressedRpc(config);
-      this.rpc = rpcConfig.rpc;
 
       // Create TestRelayer using user's wallet as fee payer
       this.relayer = createTestRelayer(this.wallet, this.connection);
@@ -460,6 +494,39 @@ export class GhostSol {
    */
   isInitialized(): boolean {
     return this.initialized;
+  }
+
+  /**
+   * Get RPC metrics for monitoring
+   * 
+   * @returns RPC metrics including health status and performance data
+   */
+  getRpcMetrics(): any {
+    if (this.rpcManager) {
+      return this.rpcManager.getMetrics();
+    }
+    return null;
+  }
+
+  /**
+   * Get RPC health status
+   * 
+   * @returns Map of endpoint URLs to health information
+   */
+  getRpcHealth(): Map<string, any> | null {
+    if (this.rpcManager) {
+      return this.rpcManager.getHealthStatus();
+    }
+    return null;
+  }
+
+  /**
+   * Cleanup resources when done
+   */
+  dispose(): void {
+    if (this.rpcManager) {
+      this.rpcManager.stop();
+    }
   }
 
   /**
