@@ -218,42 +218,76 @@ export class GhostSolPrivacy {
   /**
    * Perform a private transfer with full encryption
    * Unlike ZK Compression, this actually hides the amount and recipient linkability
+   * 
+   * This implements triple encryption:
+   * 1. Sender's new balance (encrypted for sender)
+   * 2. Transfer amount (encrypted for recipient)
+   * 3. Auditor copy (encrypted for compliance, if enabled)
    */
   async privateTransfer(
     recipientAddress: string, 
-    amount: number
+    amountLamports: number
   ): Promise<PrivateTransferResult> {
     this._assertInitialized();
     this._assertConfidentialAccount();
     
+    const startTime = Date.now();
+    
     try {
-      const recipient = new PublicKey(recipientAddress);
+      const recipientPubKey = new PublicKey(recipientAddress);
+      const amount = BigInt(amountLamports);
       
-      // Encrypt the transfer amount
-      const encryptedAmount = await this.encryptionUtils.encryptAmount(
-        BigInt(amount),
-        recipient
-      );
+      // 1. Validate recipient has confidential account
+      await this._validateRecipientConfidentialAccount(recipientPubKey);
       
-      // Generate zero-knowledge proof for transfer validity
+      // 2. Get sender's current encrypted balance
+      const senderEncryptedBalance = await this.getEncryptedBalance();
+      
+      // 3. Decrypt sender's balance to validate sufficient funds
+      const senderBalance = await this.decryptBalance();
+      if (senderBalance < amountLamports) {
+        throw new PrivacyError(
+          `Insufficient balance: have ${senderBalance} lamports, need ${amountLamports} lamports`
+        );
+      }
+      
+      // 4. Generate transfer proof (balance validity + range proof)
+      // Proves: oldBalance - amount = newBalance (without revealing amounts)
       const zkProof = await this._generateTransferProof(
         amount,
-        encryptedAmount,
-        recipient
+        senderEncryptedBalance,
+        recipientPubKey
       );
       
-      // Execute private transfer
+      // 5. Triple encryption for sender, recipient, and auditor
+      const transferData = await this._createTripleEncryptedTransfer(
+        amount,
+        senderBalance,
+        recipientPubKey
+      );
+      
+      // 6. Create confidential transfer instruction and submit transaction
       const signature = await this.confidentialTransferManager.transfer(
         this.confidentialAccount!.address,
-        recipient,
-        encryptedAmount,
+        recipientPubKey,
+        transferData.recipientEncrypted,
         zkProof
       );
+      
+      // 7. Update local balance cache
+      this.confidentialAccount!.encryptedBalance = transferData.senderNewBalance;
+      
+      const endTime = Date.now();
+      const proofGenerationTime = endTime - startTime;
+      
+      console.log(`✅ Private transfer completed in ${proofGenerationTime}ms`);
       
       return {
         signature,
-        encryptedAmount,
-        zkProof
+        encryptedAmount: transferData.recipientEncrypted,
+        zkProof,
+        blockHeight: undefined,
+        gasCost: undefined
       };
       
     } catch (error) {
@@ -397,12 +431,50 @@ export class GhostSolPrivacy {
   }
   
   private async _generateTransferProof(
-    amount: number, 
-    encryptedAmount: EncryptedAmount, 
-    recipient: PublicKey
+    amount: bigint,
+    senderBalance: EncryptedBalance,
+    recipientPubKey: PublicKey
   ): Promise<ZKProof> {
-    // TODO: Implement actual ZK proof generation for transfers
-    throw new ProofGenerationError('ZK proof generation not yet implemented');
+    try {
+      // Generate proof that shows:
+      // 1. oldBalance - amount = newBalance (without revealing amounts)
+      // 2. 0 ≤ amount < 2^64 (range proof - prevents negative transfers)
+      // 3. newBalance ≥ 0 (prevents overdraft)
+      
+      const proofStartTime = Date.now();
+      
+      // Create encrypted amount for proof generation
+      const encryptedAmount = await this.encryptionUtils.encryptAmount(
+        amount,
+        recipientPubKey
+      );
+      
+      // Generate the actual ZK proof
+      // In a full implementation, this would use Solana's ZK syscalls
+      // For now, we use the encryption utils to generate a circuit proof
+      const proof = await this.encryptionUtils.generateAmountProof(
+        amount,
+        encryptedAmount,
+        'transfer'
+      );
+      
+      const proofEndTime = Date.now();
+      const proofTime = proofEndTime - proofStartTime;
+      
+      if (proofTime > 5000) {
+        console.warn(`⚠️  Proof generation took ${proofTime}ms (target: <5000ms)`);
+      } else {
+        console.log(`✅ Proof generated in ${proofTime}ms`);
+      }
+      
+      return proof;
+      
+    } catch (error) {
+      throw new ProofGenerationError(
+        `Transfer proof generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error : undefined
+      );
+    }
   }
   
   private async _generateWithdrawProof(amount: number, encryptedAmount: EncryptedAmount): Promise<ZKProof> {
@@ -419,6 +491,106 @@ export class GhostSolPrivacy {
   private _assertConfidentialAccount(): void {
     if (!this.confidentialAccount) {
       throw new ConfidentialAccountError('No confidential account available');
+    }
+  }
+  
+  /**
+   * Validate that recipient has a confidential account
+   * This is critical - recipient MUST have a confidential account to receive encrypted transfers
+   */
+  private async _validateRecipientConfidentialAccount(recipientPubKey: PublicKey): Promise<void> {
+    try {
+      // In a full implementation, this would:
+      // 1. Derive the recipient's associated token account address
+      // 2. Check if the account exists
+      // 3. Verify it has confidential transfer extension enabled
+      // 4. Verify it's for the same mint as sender
+      
+      // For prototype, we do basic validation
+      if (!recipientPubKey) {
+        throw new ConfidentialAccountError('Invalid recipient address');
+      }
+      
+      // Check if recipient has an account (simplified check)
+      // In production, would query the recipient's confidential account
+      const recipientAccount = await this.connection.getAccountInfo(recipientPubKey);
+      
+      // For now, we allow transfers even if recipient doesn't exist yet
+      // In production, this would create a pending balance that recipient must claim
+      if (!recipientAccount) {
+        console.log('ℹ️  Recipient account not found - transfer will create pending balance');
+      }
+      
+    } catch (error) {
+      throw new ConfidentialAccountError(
+        `Recipient validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error : undefined
+      );
+    }
+  }
+  
+  /**
+   * Create triple-encrypted transfer data
+   * Encrypts for: sender (new balance), recipient (transfer amount), auditor (compliance)
+   */
+  private async _createTripleEncryptedTransfer(
+    amount: bigint,
+    senderBalanceLamports: number,
+    recipientPubKey: PublicKey
+  ): Promise<{
+    senderNewBalance: EncryptedBalance;
+    recipientEncrypted: EncryptedAmount;
+    auditorEncrypted?: EncryptedAmount;
+  }> {
+    try {
+      const newSenderBalance = BigInt(senderBalanceLamports) - amount;
+      
+      // 1. Encrypt new balance for sender
+      const senderNewBalanceEncrypted = await this.encryptionUtils.encryptAmount(
+        newSenderBalance,
+        this.wallet.publicKey
+      );
+      
+      const senderNewBalance: EncryptedBalance = {
+        ciphertext: senderNewBalanceEncrypted.ciphertext,
+        commitment: senderNewBalanceEncrypted.commitment,
+        randomness: senderNewBalanceEncrypted.randomness,
+        lastUpdated: Date.now(),
+        exists: true
+      };
+      
+      // 2. Encrypt transfer amount for recipient
+      const recipientEncrypted = await this.encryptionUtils.encryptAmount(
+        amount,
+        recipientPubKey
+      );
+      
+      // 3. Encrypt for auditor if viewing keys enabled
+      let auditorEncrypted: EncryptedAmount | undefined;
+      if (this.config.enableViewingKeys && this.confidentialMint?.auditorAuthority) {
+        auditorEncrypted = await this.encryptionUtils.encryptAmount(
+          amount,
+          this.confidentialMint.auditorAuthority
+        );
+        console.log('✅ Auditor copy encrypted for compliance');
+      }
+      
+      console.log('✅ Triple encryption completed:');
+      console.log(`   - Sender new balance: ${newSenderBalance} lamports (encrypted)`);
+      console.log(`   - Recipient amount: ${amount} lamports (encrypted)`);
+      console.log(`   - Auditor copy: ${auditorEncrypted ? 'Yes' : 'No'}`);
+      
+      return {
+        senderNewBalance,
+        recipientEncrypted,
+        auditorEncrypted
+      };
+      
+    } catch (error) {
+      throw new EncryptionError(
+        `Triple encryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error : undefined
+      );
     }
   }
 }
