@@ -4,6 +4,41 @@
 **Linear Issue**: AVM-12  
 **Status**: ✅ Research Complete, Ready for Implementation  
 **Created**: 2025-10-29  
+**Updated**: 2025-10-31 (Added Privacy Cash Analysis)
+
+---
+
+## 🆕 BREAKING: Privacy Cash Competitive Analysis (2025-10-31)
+
+**NEW RESEARCH**: Complete analysis of Privacy Cash, a live production privacy protocol on Solana.
+
+### 📄 Must-Read Documents (In Order)
+
+1. **[PRIVACY_CASH_RESEARCH_SUMMARY.md](./PRIVACY_CASH_RESEARCH_SUMMARY.md)** ⭐ **START HERE**
+   - Executive summary and key findings
+   - Critical next steps and action items
+   - Decision framework for strategic choices
+   - **Read Time**: 10 minutes
+
+2. **[privacy-cash-analysis.md](./privacy-cash-analysis.md)** 📚 **DEEP DIVE**
+   - 26,000+ word comprehensive technical analysis
+   - Complete architecture breakdown
+   - Point-by-point comparison with GhostSol
+   - Strategic recommendations
+   - **Read Time**: 2+ hours
+
+3. **[privacy-cash-quick-reference.md](./privacy-cash-quick-reference.md)** 📋 **QUICK LOOKUP**
+   - Developer quick reference
+   - Code examples and comparisons
+   - When to use which protocol
+   - **Read Time**: 15 minutes
+
+### 🎯 Key Findings
+
+- **Privacy Cash is production-ready**: Live on mainnet, 4 audits, proven architecture
+- **Different approach**: UTXO + client-side ZK proofs vs our Light Protocol approach
+- **Trade-offs**: Privacy Cash = stronger privacy but slower UX; GhostSol = faster but privacy TBD
+- **CRITICAL ACTION**: Must research Light Protocol's privacy guarantees immediately
 
 ---
 
