@@ -26,7 +26,9 @@
     "test": "tsx test/basic.ts",
     "test:privacy": "tsx test/privacy-prototype.ts",
     "test:dual-mode": "tsx test/dual-mode-test.ts",
-    "test:deposit": "tsx test/privacy/deposit.test.ts"
+    "test:deposit": "tsx test/privacy/deposit.test.ts",
+    "test:e2e-viewing-keys": "tsx test/e2e-viewing-keys.test.ts",
+    "test:viewing-keys": "tsx test/viewing-keys.test.ts"
   },
   "dependencies": {
     "@lightprotocol/stateless.js": "^0.21.0",
