@@ -674,12 +674,61 @@ export class GhostSolPrivacy {
     // In a real implementation, you'd either create a new mint
     // or connect to an existing confidential mint
     // For now, we'll create one for testing
-    await this.createConfidentialMint();
+    try {
+      const mintKeypair = Keypair.generate();
+      
+      // Create confidential mint using SPL Token 2022
+      await this.confidentialTransferManager.createConfidentialMint(
+        mintKeypair,
+        this.wallet.publicKey, // mint authority
+        this.config.enableViewingKeys ? this.wallet.publicKey : undefined // auditor authority
+      );
+      
+      this.confidentialMint = {
+        address: mintKeypair.publicKey,
+        authority: this.wallet.publicKey,
+        confidentialTransferEnabled: true,
+        auditorAuthority: this.config.enableViewingKeys ? this.wallet.publicKey : undefined
+      };
+      
+    } catch (error) {
+      throw new ConfidentialAccountError(
+        `Failed to create confidential mint: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error : undefined
+      );
+    }
   }
   
   private async _initializeConfidentialAccount(): Promise<void> {
     // Create confidential account for the user
-    await this.createConfidentialAccount();
+    if (!this.confidentialMint) {
+      throw new ConfidentialAccountError('No confidential mint available');
+    }
+    
+    try {
+      const accountAddress = await this.confidentialTransferManager.createConfidentialAccount(
+        this.confidentialMint.address,
+        this.wallet.publicKey
+      );
+      
+      this.confidentialAccount = {
+        address: accountAddress,
+        mint: this.confidentialMint.address,
+        owner: this.wallet.publicKey,
+        encryptedBalance: {
+          ciphertext: new Uint8Array(0),
+          commitment: new Uint8Array(0),
+          lastUpdated: Date.now(),
+          exists: false
+        }
+      };
+      
+    } catch (error) {
+      throw new ConfidentialAccountError(
+        `Failed to create confidential account: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error : undefined
+      );
+    }
   }
   
   /**
