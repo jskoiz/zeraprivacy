@@ -540,3 +540,33 @@ export {
 export type {
   EndpointHealthInfo
 } from './core/rpc-manager';
+
+// Export performance optimization utilities
+export {
+  Cache,
+  RPCCache,
+  ScanCache,
+  CryptoCache,
+  CacheManager,
+  PerformanceMonitor,
+  measurePerformance,
+  globalCacheManager,
+  globalPerformanceMonitor
+} from './core/cache';
+
+export type {
+  CacheConfig,
+  CacheStats
+} from './core/cache';
+
+// Export blockchain scanner with optimizations
+export {
+  BlockchainScanner,
+  createStealthAddressMemo,
+  parseStealthAddressMemo
+} from './privacy/blockchain-scanner';
+
+export type {
+  ScannerConfig,
+  ScanResult
+} from './privacy/blockchain-scanner';

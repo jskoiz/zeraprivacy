@@ -21,6 +21,7 @@
 import { Connection, Commitment } from '@solana/web3.js';
 import { createRpc } from '@lightprotocol/stateless.js';
 import { RpcConfig, RpcEndpointConfig, getZkCompressionEndpoints } from './rpc-config';
+import { globalCacheManager, RPCCache } from './cache';
 
 /**
  * Endpoint health status
@@ -110,6 +111,7 @@ export class RpcManager {
   private zkRpcs: Map<string, any>;
   private healthCheckInterval?: ReturnType<typeof setInterval>;
   private currentEndpointIndex: number = 0;
+  private rpcCache: RPCCache;
 
   constructor(config: RpcConfig) {
     this.config = config;
@@ -117,6 +119,7 @@ export class RpcManager {
     this.rateLimiters = new Map();
     this.connections = new Map();
     this.zkRpcs = new Map();
+    this.rpcCache = globalCacheManager.getRPCCache();
 
     // Initialize health info for all endpoints
     for (const endpoint of config.endpoints) {
