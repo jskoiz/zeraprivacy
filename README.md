@@ -346,14 +346,166 @@ npx tsx test/e2e-test.ts
 - This is **BETA software** - not audited for production use
 - Do **NOT** use with real funds on mainnet
 - Prototype ElGamal encryption is for testing only
+- Range proofs are placeholder implementations (not cryptographically secure)
+- Professional security audit required before production use
 - Report security issues privately via GitHub Security Advisories
 
+### Security Features
+
+**Implemented Privacy Protections**:
+- ✅ **ZK Compression**: Hide transaction amounts and balances on-chain
+- ✅ **Stealth Addresses**: Unlinkable one-time payment addresses using ECDH
+- ✅ **Viewing Keys**: Selective disclosure for regulatory compliance
+- ✅ **Encrypted Balances**: Twisted ElGamal encryption over Ristretto255
+- ✅ **Domain Separation**: Cryptographic domain separation prevents protocol collisions
+
+**Security Assumptions**:
+- Elliptic Curve Discrete Logarithm Problem (ECDLP) is hard on secp256k1 and Ristretto255
+- Decisional Diffie-Hellman (DDH) assumption holds for ElGamal encryption
+- SHA-256 and SHA-512 are collision-resistant and pre-image resistant
+- AES-GCM provides authenticated encryption with unique nonces
+- Platform CSPRNG (crypto.getRandomValues) provides secure randomness
+- User private keys remain confidential and are never exposed
+
+**Known Security Limitations**:
+- ⚠️ Range proofs are placeholder only (no cryptographic proof of amount validity)
+- ⚠️ Viewing key revocation is client-side only (not enforced on-chain)
+- ⚠️ Fallback encryption methods in stealth addresses (should be removed for production)
+- ⚠️ No explicit point validation for secp256k1 public keys
+- ⚠️ No secure memory clearing for cryptographic key material
+- ⚠️ RPC providers can observe query patterns (metadata leakage)
+
+### Security Documentation
+
+Comprehensive security documentation is available for auditors and security researchers:
+
+- **[Security Audit Preparation](./docs/security/SECURITY_AUDIT_PREPARATION.md)** - Complete guide for security auditors
+- **[Security Assumptions](./docs/security/SECURITY_ASSUMPTIONS.md)** - Cryptographic and operational assumptions
+- **[Audit Checklist](./docs/security/AUDIT_CHECKLIST.md)** - Systematic security review checklist
+- **[Dependency Security Audit](./docs/security/EXTERNAL_DEPENDENCY_SECURITY_AUDIT.md)** - External dependencies and API keys
+
+### Cryptographic Implementations
+
+**Encryption** (`sdk/src/privacy/encryption.ts`):
+- **Algorithm**: Twisted ElGamal over Ristretto255 curve
+- **Symmetric Encryption**: AES-256-GCM with random 12-byte IV
+- **Key Derivation**: SHA-256 KDF with domain separation
+- **Commitment**: Pedersen commitment for amount hiding
+- **Status**: Prototype implementation for testing
+
+**Stealth Addresses** (`sdk/src/privacy/stealth-address.ts`):
+- **Curve**: secp256k1 (Bitcoin's elliptic curve)
+- **Protocol**: ECDH-based one-time addresses
+- **Key Derivation**: P = Hash(r*V)*G + S
+- **Unlinkability**: Fresh ephemeral key per payment
+- **Status**: Functional implementation, needs production hardening
+
+**Viewing Keys** (`sdk/src/privacy/viewing-keys.ts`):
+- **Derivation**: Account-specific keys using SHA-512 and XOR
+- **Encryption**: ECIES-style encryption for auditor keys
+- **Access Control**: Permission-based with expiration
+- **Status**: Functional, client-side permission enforcement only
+
 ### Best Practices
-- Never expose private keys or seed phrases
+
+**For Developers**:
+- Never expose private keys or seed phrases in code or logs
 - Always verify recipient addresses before transfers
-- Use environment variables for sensitive configuration
+- Use environment variables for sensitive configuration (RPC API keys)
+- Validate all user input before cryptographic operations
 - Test thoroughly on devnet before any mainnet usage
 - Keep viewing keys secure and revoke when no longer needed
+- Run local RPC node for maximum privacy (future enhancement)
+
+**For Users**:
+- Use hardware wallets when possible for key protection
+- Verify recipient addresses through multiple channels
+- Understand beta limitations before using the SDK
+- Never share private keys, seed phrases, or viewing keys
+- Keep wallet software and browser up to date
+- Be aware that RPC providers can see query patterns
+
+**For Auditors**:
+- Review cryptographic implementations in `sdk/src/privacy/` directory
+- Check security comments marked with "SECURITY CRITICAL" and "⚠️"
+- Verify no insecure fallback behaviors in production code
+- Test with invalid inputs and malformed cryptographic parameters
+- Review error handling for information leakage
+- Validate randomness sources and nonce uniqueness
+
+### Threat Model
+
+**Protected Against**:
+- ✅ Transaction linkability (stealth addresses prevent linking)
+- ✅ Balance disclosure (encrypted balances hide amounts)
+- ✅ Unauthorized viewing (viewing keys require explicit authorization)
+- ✅ Passive network observers (HTTPS encryption on RPC traffic)
+- ✅ Replay attacks (transaction nonces and blockhash expiration)
+
+**NOT Protected Against** (Out of Scope):
+- ❌ Compromised user device with malware or keyloggers
+- ❌ Physical access to unlocked wallet
+- ❌ Social engineering or phishing attacks
+- ❌ Quantum computer attacks (future threat)
+- ❌ Malicious RPC provider censorship
+- ❌ Browser extensions stealing wallet data
+- ❌ Memory inspection or process dumps
+- ❌ Side-channel attacks (timing, power, EM analysis)
+
+### Security Audit Status
+
+**Current Status**: Preparing for professional security audit
+
+**Audit Preparation**:
+- [x] Security documentation complete
+- [x] Security assumptions documented
+- [x] Audit checklist prepared
+- [x] Security comments added to critical code
+- [x] Known limitations identified and documented
+- [ ] Professional security audit (pending)
+- [ ] Remediation of audit findings (pending)
+- [ ] Final security review before v1.0.0 (pending)
+
+**Target**: Complete professional security audit before v1.0.0 stable release
+
+### Reporting Security Issues
+
+If you discover a security vulnerability, please report it responsibly:
+
+1. **DO NOT** open a public GitHub issue
+2. Use GitHub Security Advisories (preferred): [Report a vulnerability](https://github.com/jskoiz/ghostsol/security/advisories/new)
+3. Or email security contact: [To be added]
+4. Include detailed description and reproduction steps
+5. Allow time for us to fix before public disclosure
+
+**Security Disclosure Policy**:
+- We will acknowledge receipt within 48 hours
+- We will provide an initial assessment within 1 week
+- We will work with you to understand and fix the issue
+- We will credit you in the security advisory (unless you prefer to remain anonymous)
+- We request 90 days for responsible disclosure
+
+### Security Roadmap
+
+**v0.2.0-beta** (Next Release):
+- [ ] Remove insecure fallback behaviors
+- [ ] Add explicit point validation for all public keys
+- [ ] Implement constant-time comparison utilities
+- [ ] Add secure memory clearing for key material
+- [ ] Improve error messages (prevent information leakage)
+
+**v0.3.0-beta**:
+- [ ] Implement proper range proofs (Bulletproofs)
+- [ ] On-chain viewing key registry for revocation
+- [ ] ZK proof generation for confidential transfers
+- [ ] Formal verification of key protocols
+
+**v1.0.0** (Stable Release):
+- [ ] Complete professional security audit
+- [ ] All critical security issues resolved
+- [ ] Production-ready cryptographic implementations
+- [ ] Comprehensive security testing
+- [ ] Mainnet deployment approved
 
 ## 🤝 Contributing
 

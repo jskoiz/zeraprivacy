@@ -27,6 +27,26 @@ export class EncryptionUtils {
   /**
    * Encrypt an amount using Twisted ElGamal encryption
    * 
+   * SECURITY CRITICAL: This function implements ElGamal encryption for confidential transfers.
+   * The confidentiality of all encrypted balances depends on this implementation.
+   * 
+   * Protocol: Twisted ElGamal over Ristretto255 curve
+   * - Ephemeral key: R = r*G (where r is random)
+   * - Shared secret: S = r * recipientPoint
+   * - Symmetric key: K = KDF(S)
+   * - Ciphertext: AES-GCM(K, amount)
+   * - Output: R || IV || ciphertext
+   * 
+   * Security Properties:
+   * - Semantic security under DDH assumption
+   * - IND-CCA2 security from AES-GCM
+   * - Fresh randomness ensures different ciphertext for same amount
+   * 
+   * Security Concerns:
+   * ⚠️ CRITICAL: Range proof is placeholder (not production-ready)
+   * ⚠️ Must use fresh randomness for each encryption (never reuse)
+   * ⚠️ IV must be unique for each encryption with same key
+   * 
    * @param amount - Amount to encrypt (in lamports)
    * @param recipientPublicKey - Recipient's public key
    * @returns Encrypted amount with commitment and range proof
@@ -36,7 +56,8 @@ export class EncryptionUtils {
     recipientPublicKey: PublicKey
   ): Promise<EncryptedAmount> {
     try {
-      // Generate encryption nonce/scalar
+      // SECURITY: Generate fresh randomness for this encryption
+      // This ensures semantic security (same amount → different ciphertext)
       const randomness = this._generateRandomness();
 
       // ECIES-style ElGamal over Ristretto255
@@ -46,14 +67,16 @@ export class EncryptionUtils {
         randomness
       );
 
-      // Pragmatic range proof placeholder for devnet demo
+      // ⚠️ SECURITY WARNING: Range proof is placeholder for beta testing only
+      // TODO FOR PRODUCTION: Implement proper range proof (Bulletproofs or similar)
+      // Without range proof, there's no proof that amount is in valid range [0, 2^64)
       const rangeProof = await this._generateRangeProof(amount, randomness);
 
       return {
         ciphertext,
         commitment: pedersenCommitment,
         rangeProof,
-        randomness: randomness
+        randomness: randomness // SECURITY: Keep randomness for commitment opening
       };
       
     } catch (error) {
@@ -149,8 +172,27 @@ export class EncryptionUtils {
 
   // Private helper methods
 
+  /**
+   * Generate cryptographically secure randomness
+   * 
+   * SECURITY CRITICAL: Uses platform CSPRNG for unpredictable randomness.
+   * All cryptographic security depends on quality of this randomness.
+   * 
+   * Security Properties:
+   * - Uses crypto.getRandomValues() (Web Crypto API / Node.js crypto)
+   * - Cryptographically secure pseudo-random number generator (CSPRNG)
+   * - Backed by OS entropy sources
+   * 
+   * Potential Vulnerabilities:
+   * - Weak platform RNG (extremely rare on modern systems)
+   * - Insufficient entropy at startup (platform handles this)
+   * - Predictable RNG state (platform handles this)
+   * 
+   * @returns 32 bytes of cryptographically secure random data
+   */
   private _generateRandomness(): Uint8Array {
     const randomness = new Uint8Array(32);
+    // SECURITY: Platform CSPRNG - backed by OS entropy
     crypto.getRandomValues(randomness);
     return randomness;
   }
@@ -201,14 +243,38 @@ export class EncryptionUtils {
     return C.toRawBytes();
   }
 
+  /**
+   * Generate range proof for encrypted amount
+   * 
+   * ⚠️ SECURITY WARNING: This is a PLACEHOLDER implementation for beta testing.
+   * DO NOT use in production with real funds.
+   * 
+   * What a Real Range Proof Should Do:
+   * - Prove 0 <= amount < 2^64 without revealing amount
+   * - Use Bulletproofs or similar zero-knowledge proof system
+   * - Bind proof to Pedersen commitment
+   * - Verify efficiently on-chain or client-side
+   * 
+   * Current Implementation:
+   * - Returns random bytes (NO cryptographic proof)
+   * - Does NOT prove anything about the amount
+   * - Placeholder for testing and development only
+   * 
+   * TODO FOR PRODUCTION:
+   * - Implement Bulletproofs range proof
+   * - Integrate with Solana ZK syscalls for verification
+   * - Add proper proof generation and verification
+   * 
+   * @param amount - Amount to prove is in range
+   * @param randomness - Commitment randomness
+   * @returns Placeholder range proof (128 random bytes)
+   */
   private async _generateRangeProof(
     amount: bigint,
     randomness: Uint8Array
   ): Promise<Uint8Array> {
-    // TODO: Implement actual range proof generation
-    // This proves that 0 <= amount < 2^64 without revealing the amount
-    
-    // Placeholder implementation
+    // ⚠️ CRITICAL: This is a placeholder - NOT a real range proof
+    // TODO: Implement actual Bulletproofs or similar range proof
     const rangeProof = new Uint8Array(128);
     crypto.getRandomValues(rangeProof);
     return rangeProof;
