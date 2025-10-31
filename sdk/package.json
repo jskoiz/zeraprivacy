@@ -1,6 +1,6 @@
 {
   "name": "ghost-sol",
-  "version": "0.1.0",
+  "version": "0.1.0-beta.1",
   "description": "Privacy SDK for Solana developers using ZK Compression",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -55,9 +55,18 @@
     "solana",
     "privacy",
     "zk-compression",
+    "stealth-addresses",
     "cryptocurrency",
     "blockchain"
   ],
   "author": "Ghost Sol Team",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jskoiz/ghostsol.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jskoiz/ghostsol/issues"
+  },
+  "homepage": "https://github.com/jskoiz/ghostsol#readme"
 }

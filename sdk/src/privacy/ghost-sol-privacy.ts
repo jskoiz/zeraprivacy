@@ -720,7 +720,8 @@ export class GhostSolPrivacy {
           commitment: new Uint8Array(0),
           lastUpdated: Date.now(),
           exists: false
-        }
+        },
+        createdAt: Date.now()
       };
       
     } catch (error) {
