@@ -39,6 +39,7 @@ Ghost Sol SDK provides a simple interface for private SOL transfers using ZK Com
 
 ## Installation
 
+### Stable Release
 ### Beta Installation
 
 ```bash
@@ -49,6 +50,21 @@ npm install ghost-sol@0.1.0-beta
 npm install ghost-sol@beta
 ```
 
+### Beta Release (Latest Features)
+
+To install the latest beta version with cutting-edge features:
+
+```bash
+npm install ghost-sol@beta
+```
+
+Or install a specific beta version:
+
+```bash
+npm install ghost-sol@0.1.0-beta.0
+```
+
+> **Note**: Beta releases may contain experimental features and are recommended for testing and development purposes.
 **Important**: During beta, we recommend pinning to a specific version to avoid unexpected changes:
 
 ```json

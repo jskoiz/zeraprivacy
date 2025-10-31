@@ -536,13 +536,13 @@ export class ViewingKeyManager {
   ): Promise<Uint8Array> {
     const cryptoKey = await crypto.subtle.importKey(
       'raw',
-      keyBytes,
+      keyBytes as BufferSource,
       { name: 'AES-GCM' },
       false,
       ['encrypt']
     );
     const ct = new Uint8Array(
-      await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, cryptoKey, plaintext)
+      await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv as BufferSource }, cryptoKey, plaintext as BufferSource)
     );
     return ct;
   }
@@ -554,13 +554,13 @@ export class ViewingKeyManager {
   ): Promise<Uint8Array> {
     const cryptoKey = await crypto.subtle.importKey(
       'raw',
-      keyBytes,
+      keyBytes as BufferSource,
       { name: 'AES-GCM' },
       false,
       ['decrypt']
     );
     const pt = new Uint8Array(
-      await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, cryptoKey, sealed)
+      await crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv as BufferSource }, cryptoKey, sealed as BufferSource)
     );
     return pt;
   }
