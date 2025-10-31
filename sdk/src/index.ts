@@ -541,32 +541,36 @@ export type {
   EndpointHealthInfo
 } from './core/rpc-manager';
 
-// Export performance optimization utilities
+// Export monitoring and analytics
 export {
-  Cache,
-  RPCCache,
-  ScanCache,
-  CryptoCache,
-  CacheManager,
-  PerformanceMonitor,
-  measurePerformance,
-  globalCacheManager,
-  globalPerformanceMonitor
-} from './core/cache';
+  initializeMonitoring,
+  getMonitor,
+  disableMonitoring,
+  SdkMonitor
+} from './core/monitoring';
 
 export type {
-  CacheConfig,
-  CacheStats
-} from './core/cache';
+  MonitoringConfig,
+  ErrorEvent,
+  PerformanceMetric,
+  HealthCheckResult,
+  MonitoringStats,
+  Alert,
+  AlertThresholds
+} from './core/monitoring';
 
-// Export blockchain scanner with optimizations
 export {
-  BlockchainScanner,
-  createStealthAddressMemo,
-  parseStealthAddressMemo
-} from './privacy/blockchain-scanner';
+  initializeAnalytics,
+  getAnalytics,
+  disableAnalytics,
+  SdkAnalytics,
+  anonymizeOperationProps
+} from './core/analytics';
 
 export type {
-  ScannerConfig,
-  ScanResult
-} from './privacy/blockchain-scanner';
+  AnalyticsConfig,
+  AnalyticsEvent,
+  AnalyticsEventType,
+  UsageStats,
+  FeatureUsage
+} from './core/analytics';
