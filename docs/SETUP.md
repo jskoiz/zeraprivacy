@@ -332,20 +332,86 @@ vercel
 
 ### 3. Environment Variables
 
-For production deployment, consider setting:
+GhostSOL includes a secure, centralized environment configuration system that validates all environment variables at initialization.
 
+#### Setup
+
+1. **Copy the example file:**
+   ```bash
+   cp env.example .env
+   ```
+
+2. **Fill in your configuration values** in `.env`
+
+3. **For Next.js apps**, copy the example in the demo directory:
+   ```bash
+   cd examples/nextjs-demo
+   cp env.example .env.local
+   ```
+
+#### Required Variables
+
+- `SOLANA_CLUSTER` - Solana network (`devnet` or `mainnet-beta`)
+- `SOLANA_RPC_URL` - Primary RPC endpoint URL
+
+For Next.js apps, use public variables for client-side access:
+- `NEXT_PUBLIC_CLUSTER` - Public cluster (accessible in browser)
+- `NEXT_PUBLIC_RPC_URL` - Public RPC URL (accessible in browser)
+
+#### Optional Variables
+
+- `SOLANA_RPC_URL_FALLBACK` - Fallback RPC endpoint (used if primary fails)
+- `HELIUS_API_KEY` - Helius API key (if using Helius RPC endpoints)
+
+#### Example Configuration
+
+**Development:**
 ```bash
-NEXT_PUBLIC_RPC_URL=https://api.mainnet-beta.solana.com
-NEXT_PUBLIC_CLUSTER=mainnet-beta
+SOLANA_CLUSTER=devnet
+SOLANA_RPC_URL=https://api.devnet.solana.com
+NEXT_PUBLIC_CLUSTER=devnet
+NEXT_PUBLIC_RPC_URL=https://api.devnet.solana.com
 ```
+
+**Production:**
+```bash
+SOLANA_CLUSTER=mainnet-beta
+SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
+NEXT_PUBLIC_CLUSTER=mainnet-beta
+NEXT_PUBLIC_RPC_URL=https://api.mainnet-beta.solana.com
+```
+
+#### Security Features
+
+The environment configuration system provides:
+
+- ✅ **Automatic validation** - Invalid or missing variables detected at startup
+- ✅ **Type safety** - TypeScript interfaces for all configuration values
+- ✅ **Sensitive value masking** - Private keys and API keys never logged
+- ✅ **Browser safety** - Server-only variables cannot be accessed client-side
+- ✅ **HTTPS enforcement** - Production requires HTTPS endpoints
+- ✅ **Clear error messages** - Helpful guidance when configuration is invalid
+
+#### Security-Sensitive Variables
+
+These variables should **NEVER** be prefixed with `NEXT_PUBLIC_` or exposed to the browser:
+
+- `PRIVATE_KEY` - User wallet private key
+- `AUDITOR_KEY` - Auditor key for viewing keys
+- `ENCRYPTION_KEY` - Encryption keys for privacy features
+- `HELIUS_API_KEY` - Helius API key
+
+The SDK automatically validates that sensitive variables are not exposed to client-side code.
 
 ## Security Considerations
 
 - **Never commit private keys** to version control
-- **Use environment variables** for sensitive configuration
-- **Validate all inputs** before processing
+- **Use environment variables** for sensitive configuration (the SDK validates this automatically)
+- **Never use NEXT_PUBLIC_ prefix** for sensitive variables (private keys, API keys)
+- **Validate all inputs** before processing (handled by the SDK)
 - **Test thoroughly** before mainnet deployment
-- **Use proper error handling** to prevent information leakage
+- **Use proper error handling** to prevent information leakage (sensitive values are automatically masked)
+- **Use HTTPS in production** (automatically enforced by the SDK)
 
 ## Next Steps
 

@@ -288,6 +288,45 @@ export class ConfidentialTransferManager {
     }
   }
 
+  /**
+   * Apply pending balance to confidential account
+   * 
+   * After a deposit or incoming transfer, the encrypted amount appears in a
+   * "pending balance" that must be manually applied to the available balance.
+   * This is a required step in the confidential transfer protocol.
+   * 
+   * @param account - Confidential account address
+   * @param expectedPendingBalance - Expected pending balance (for validation)
+   * @returns Transaction signature
+   */
+  async applyPendingBalance(
+    account: PublicKey,
+    expectedPendingBalance: EncryptedAmount
+  ): Promise<string> {
+    try {
+      const transaction = new Transaction();
+      
+      // Add apply pending balance instruction
+      const applyBalanceInstruction = await this._createApplyPendingBalanceInstruction(
+        account,
+        expectedPendingBalance
+      );
+      
+      transaction.add(applyBalanceInstruction);
+      
+      // Sign and send transaction
+      const signature = await this._sendAndConfirmTransaction(transaction);
+      
+      return signature;
+      
+    } catch (error) {
+      throw new ConfidentialTransferError(
+        `Failed to apply pending balance: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error : undefined
+      );
+    }
+  }
+
   // Private helper methods
 
   private async _createConfidentialMintInstruction(
@@ -395,6 +434,25 @@ export class ConfidentialTransferManager {
       data: Buffer.concat([
         Buffer.from([3]),
         Buffer.from(encryptedAmount.ciphertext),
+      ]),
+    });
+  }
+
+  private async _createApplyPendingBalanceInstruction(
+    account: PublicKey,
+    expectedPendingBalance: EncryptedAmount
+  ): Promise<TransactionInstruction> {
+    // Apply pending balance instruction for Token-2022 confidential transfers
+    // This moves funds from "pending" to "available" encrypted balance
+    return new TransactionInstruction({
+      programId: TOKEN_2022_PROGRAM_ID,
+      keys: [
+        { pubkey: account, isSigner: false, isWritable: true },
+        { pubkey: this.wallet.publicKey, isSigner: true, isWritable: false },
+      ],
+      data: Buffer.concat([
+        Buffer.from([4]), // Apply pending balance instruction discriminator
+        Buffer.from(expectedPendingBalance.commitment), // Expected pending balance commitment
       ]),
     });
   }

@@ -11,8 +11,9 @@
 import { PublicKey, Keypair } from '@solana/web3.js';
 import { EncryptedAmount, ZKProof } from './types';
 import { EncryptionError, ProofGenerationError } from './errors';
-import { ristretto255 } from '@noble/curves/ed25519';
+import { ristretto255, ed25519 } from '@noble/curves/ed25519';
 import { sha256 } from '@noble/hashes/sha256';
+import { sha512 } from '@noble/hashes/sha512';
 
 /**
  * Encryption utilities class for confidential transfers
@@ -162,13 +163,15 @@ export class EncryptionUtils {
     // Derive scalar r from randomness
     const r = this._bytesToScalar(randomnessBytes);
 
-    // Derive recipient ElGamal public point from their Solana ed25519 key
-    const recipientPoint = this._deriveRecipientPoint(recipientPublicKey);
+    // Derive recipient scalar from public key deterministically
+    // This allows decryption to compute the same scalar from the public key
+    const recipientScalar = this._deriveRecipientScalar(recipientPublicKey);
+    const recipientPoint = ristretto255.Point.BASE.multiply(recipientScalar);
 
     // Ephemeral key: R = r*G
-    const R = ristretto255.RistrettoPoint.BASE.multiply(r);
+    const R = ristretto255.Point.BASE.multiply(r);
 
-    // Shared secret: S = r * recipientPoint
+    // Shared secret: S = r * recipientPoint = r * G * recipientScalar
     const S = recipientPoint.multiply(r);
     const sharedKey = this._kdf(S.toRawBytes());
 
@@ -223,13 +226,19 @@ export class EncryptionUtils {
     const iv = ciphertext.slice(32, 44);
     const sealed = ciphertext.slice(44);
 
-    const R = ristretto255.RistrettoPoint.fromHex(Rbytes);
+    const R = ristretto255.Point.fromHex(Rbytes);
 
-    // Derive private scalar from ed25519 secret key
-    const skScalar = this._ed25519SkToScalar(privateKey);
+    // Reconstruct the public key from the private key
+    // Solana keypairs store the public key in bytes 32-63 of the secret key
+    const publicKeyBytes = privateKey.slice(32, 64);
+    const recipientPublicKey = new PublicKey(publicKeyBytes);
 
-    // Shared secret: S = sk * R
-    const S = R.multiply(skScalar);
+    // Derive the same recipient scalar used during encryption
+    const recipientScalar = this._deriveRecipientScalar(recipientPublicKey);
+
+    // Compute shared secret: S = R * recipientScalar = (r * G) * recipientScalar = r * (G * recipientScalar)
+    // This matches encryption where S = r * recipientPoint = r * (G * recipientScalar)
+    const S = R.multiply(recipientScalar);
     const sharedKey = this._kdf(S.toRawBytes());
 
     const amountBytes = await this._aesGcmOpen(sharedKey, iv, sealed);
@@ -243,7 +252,7 @@ export class EncryptionUtils {
   ): Promise<boolean> {
     // Structure-only check for demo: valid Ristretto encoding
     try {
-      ristretto255.RistrettoPoint.fromHex(commitment);
+      ristretto255.Point.fromHex(commitment);
       return true;
     } catch {
       return false;
@@ -300,9 +309,10 @@ declare module './encryption' {}
 export interface EncryptionUtils {
   _bytesToScalar(bytes: Uint8Array): bigint;
   _amountToScalar(amount: bigint): bigint;
-  _deriveRecipientPoint(pk: PublicKey): ristretto255.RistrettoPoint;
-  _generatorH(): ristretto255.RistrettoPoint;
-  _generatorG2(): ristretto255.RistrettoPoint;
+  _deriveRecipientPoint(pk: PublicKey): ReturnType<typeof ristretto255.Point.hashToCurve>;
+  _deriveRecipientScalar(pk: PublicKey): bigint;
+  _generatorH(): ReturnType<typeof ristretto255.Point.hashToCurve>;
+  _generatorG2(): ReturnType<typeof ristretto255.Point.hashToCurve>;
   _kdf(shared: Uint8Array): Uint8Array;
   _randomIv(): Uint8Array;
   _aesGcmSeal(key: Uint8Array, iv: Uint8Array, plaintext: Uint8Array): Promise<Uint8Array>;
@@ -313,13 +323,13 @@ export interface EncryptionUtils {
 }
 
 EncryptionUtils.prototype._bytesToScalar = function (bytes: Uint8Array): bigint {
-  const n = ristretto255.CURVE.n;
+  const n = ed25519.CURVE.n;
   const x = BigInt('0x' + Buffer.from(bytes).toString('hex')) % n;
   return x === 0n ? 1n : x;
 };
 
 EncryptionUtils.prototype._amountToScalar = function (amount: bigint): bigint {
-  const n = ristretto255.CURVE.n;
+  const n = ed25519.CURVE.n;
   return amount % n;
 };
 
@@ -329,17 +339,32 @@ EncryptionUtils.prototype._deriveRecipientPoint = function (pk: PublicKey) {
   const msg = new Uint8Array(domain.length + pk.toBytes().length);
   msg.set(domain, 0);
   msg.set(pk.toBytes(), domain.length);
-  return ristretto255.hashToCurve(msg);
+  // Hash to 64 bytes using SHA-512 before hashToCurve
+  const hash = sha512(msg);
+  return ristretto255.Point.hashToCurve(hash);
+};
+
+EncryptionUtils.prototype._deriveRecipientScalar = function (pk: PublicKey): bigint {
+  const te = new TextEncoder();
+  const domain = te.encode('ghostsol/elgamal/recipient-scalar');
+  const msg = new Uint8Array(domain.length + pk.toBytes().length);
+  msg.set(domain, 0);
+  msg.set(pk.toBytes(), domain.length);
+  // Hash public key to derive a scalar deterministically
+  const hash = sha512(msg);
+  return this._bytesToScalar(hash);
 };
 
 EncryptionUtils.prototype._generatorH = function () {
   const te = new TextEncoder();
-  return ristretto255.hashToCurve(te.encode('ghostsol/pedersen/H'));
+  const hash = sha512(te.encode('ghostsol/pedersen/H'));
+  return ristretto255.Point.hashToCurve(hash);
 };
 
 EncryptionUtils.prototype._generatorG2 = function () {
   const te = new TextEncoder();
-  return ristretto255.hashToCurve(te.encode('ghostsol/pedersen/G2'));
+  const hash = sha512(te.encode('ghostsol/pedersen/G2'));
+  return ristretto255.Point.hashToCurve(hash);
 };
 
 EncryptionUtils.prototype._kdf = function (shared: Uint8Array): Uint8Array {

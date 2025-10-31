@@ -35,7 +35,7 @@ import {
 } from './errors';
 import { ConfidentialTransferManager } from './confidential-transfer';
 import { EncryptionUtils } from './encryption';
-import { ViewingKeyManager } from './viewing-keys';
+import { ViewingKeyManager, ViewingKeyConfig } from './viewing-keys';
 import { ExtendedWalletAdapter } from '../core/types';
 
 /**
@@ -183,26 +183,41 @@ export class GhostSolPrivacy {
   /**
    * Deposit SOL into the privacy pool (encrypted)
    * This is the equivalent of "shield" but with true privacy
+   * 
+   * @param amountLamports - Amount to deposit in lamports
+   * @returns Transaction signature
    */
-  async encryptedDeposit(amount: number): Promise<string> {
+  async encryptedDeposit(amountLamports: number): Promise<string> {
     this._assertInitialized();
     this._assertConfidentialAccount();
     
+    if (amountLamports < 0) {
+      throw new PrivacyError('Deposit amount must be non-negative');
+    }
+    
     try {
-      // Generate encrypted amount
+      // Generate encrypted amount for the user's public key
       const encryptedAmount = await this.encryptionUtils.encryptAmount(
-        BigInt(amount),
+        BigInt(amountLamports),
         this.wallet.publicKey
       );
       
       // Generate zero-knowledge proof for deposit validity
-      const zkProof = await this._generateDepositProof(amount, encryptedAmount);
+      // This proves: 0 ≤ amount < 2^64 without revealing amount
+      const zkProof = await this._generateDepositProof(BigInt(amountLamports), encryptedAmount);
       
-      // Execute confidential deposit
+      // Execute confidential deposit transaction
       const signature = await this.confidentialTransferManager.deposit(
         this.confidentialAccount!.address,
         encryptedAmount,
         zkProof
+      );
+      
+      // Apply pending balance (critical step!)
+      // Deposits initially go to "pending" and must be applied
+      await this.confidentialTransferManager.applyPendingBalance(
+        this.confidentialAccount!.address,
+        encryptedAmount
       );
       
       return signature;
@@ -356,8 +371,10 @@ export class GhostSolPrivacy {
 
   /**
    * Generate viewing key for compliance/auditing
+   * 
+   * @param config - Optional viewing key configuration (permissions, expiration, auditor)
    */
-  async generateViewingKey(): Promise<ViewingKey> {
+  async generateViewingKey(config?: ViewingKeyConfig): Promise<ViewingKey> {
     this._assertInitialized();
     
     if (!this.config.enableViewingKeys || !this.viewingKeyManager) {
@@ -366,7 +383,8 @@ export class GhostSolPrivacy {
     
     try {
       return await this.viewingKeyManager.generateViewingKey(
-        this.confidentialAccount!.address
+        this.confidentialAccount!.address,
+        config
       );
     } catch (error) {
       throw new PrivacyError(
@@ -374,6 +392,70 @@ export class GhostSolPrivacy {
         error instanceof Error ? error : undefined
       );
     }
+  }
+
+  /**
+   * Decrypt transaction amount using viewing key
+   * 
+   * @param txSignature - Transaction signature
+   * @param viewingKey - Viewing key for decryption
+   */
+  async decryptTransactionAmount(
+    txSignature: string,
+    viewingKey: ViewingKey
+  ): Promise<number> {
+    this._assertInitialized();
+    
+    if (!this.config.enableViewingKeys || !this.viewingKeyManager) {
+      throw new PrivacyError('Viewing keys not enabled');
+    }
+    
+    try {
+      return await this.viewingKeyManager.decryptTransactionAmount(
+        txSignature,
+        viewingKey
+      );
+    } catch (error) {
+      throw new PrivacyError(
+        `Failed to decrypt transaction amount: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error : undefined
+      );
+    }
+  }
+
+  /**
+   * Revoke a viewing key (set expiration to now)
+   * 
+   * @param viewingKey - Viewing key to revoke
+   */
+  async revokeViewingKey(viewingKey: ViewingKey): Promise<ViewingKey> {
+    this._assertInitialized();
+    
+    if (!this.config.enableViewingKeys || !this.viewingKeyManager) {
+      throw new PrivacyError('Viewing keys not enabled');
+    }
+    
+    try {
+      return await this.viewingKeyManager.revokeViewingKey(viewingKey);
+    } catch (error) {
+      throw new PrivacyError(
+        `Failed to revoke viewing key: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error : undefined
+      );
+    }
+  }
+
+  /**
+   * Check if viewing key is valid
+   * 
+   * @param viewingKey - Viewing key to validate
+   */
+  isViewingKeyValid(viewingKey: ViewingKey): boolean {
+    if (!this.config.enableViewingKeys || !this.viewingKeyManager) {
+      return false;
+    }
+    
+    return this.viewingKeyManager.isViewingKeyValid(viewingKey);
   }
 
   // Private helper methods
@@ -390,10 +472,54 @@ export class GhostSolPrivacy {
     await this.createConfidentialAccount();
   }
   
-  private async _generateDepositProof(amount: number, encryptedAmount: EncryptedAmount): Promise<ZKProof> {
-    // TODO: Implement actual ZK proof generation for deposits
-    // This would use Solana's ZK syscalls (Poseidon, alt_bn128)
-    throw new ProofGenerationError('ZK proof generation not yet implemented');
+  /**
+   * Generate zero-knowledge proof for deposit validity
+   * 
+   * This generates a range proof that proves: 0 ≤ amount < 2^64
+   * without revealing the actual amount. This prevents negative deposits
+   * and ensures the encrypted amount is valid.
+   * 
+   * Performance requirement: Must complete in < 5 seconds
+   * 
+   * @param amount - Deposit amount (private)
+   * @param encryptedAmount - Encrypted amount (public)
+   * @returns Zero-knowledge proof
+   */
+  private async _generateDepositProof(amount: bigint, encryptedAmount: EncryptedAmount): Promise<ZKProof> {
+    const startTime = Date.now();
+    
+    try {
+      // Validate amount is in valid range
+      if (amount < 0n) {
+        throw new ProofGenerationError('Amount must be non-negative');
+      }
+      
+      if (amount >= 2n ** 64n) {
+        throw new ProofGenerationError('Amount exceeds maximum (2^64)');
+      }
+      
+      // Generate range proof using encryption utilities
+      // This proves: 0 ≤ amount < 2^64 without revealing amount
+      const proof = await this.encryptionUtils.generateAmountProof(
+        amount,
+        encryptedAmount,
+        'deposit'
+      );
+      
+      // Verify proof generation completed within performance budget
+      const elapsedMs = Date.now() - startTime;
+      if (elapsedMs > 5000) {
+        console.warn(`⚠️  Proof generation took ${elapsedMs}ms (target: <5000ms)`);
+      }
+      
+      return proof;
+      
+    } catch (error) {
+      throw new ProofGenerationError(
+        `Failed to generate deposit proof: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error : undefined
+      );
+    }
   }
   
   private async _generateTransferProof(

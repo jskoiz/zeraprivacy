@@ -41,3 +41,4 @@ export async function fundDevnet(lamports?: number): Promise<string> {
   if (!sdk) throw new Error('SDK not initialized');
   return sdk.fundDevnet(lamports);
 }
+
