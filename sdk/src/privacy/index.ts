@@ -18,6 +18,7 @@ export { GhostSolPrivacy } from './ghost-sol-privacy';
 export { ConfidentialTransferManager } from './confidential-transfer';
 export { EncryptionUtils } from './encryption';
 export { ViewingKeyManager } from './viewing-keys';
+export { StealthAddressManager, StealthAddressUtils } from './stealth-addresses';
 
 // Type exports
 export type {
@@ -30,6 +31,13 @@ export type {
   ConfidentialMint,
   ConfidentialAccount
 } from './types';
+
+// Stealth address type exports
+export type {
+  StealthMetaAddress,
+  StealthAddress,
+  StealthPaymentInfo
+} from './stealth-addresses';
 
 // Error exports  
 export {
