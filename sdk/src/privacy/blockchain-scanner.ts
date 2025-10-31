@@ -27,6 +27,7 @@
 import { Connection, PublicKey, ParsedTransactionWithMeta, ConfirmedSignatureInfo } from '@solana/web3.js';
 import { EphemeralKey } from './types';
 import { PrivacyError } from './errors';
+import { globalCacheManager, ScanCache } from '../core/cache';
 
 /**
  * Configuration for blockchain scanning
@@ -40,6 +41,10 @@ export interface ScannerConfig {
   maxScanDepth?: number;
   /** Enable verbose logging */
   verbose?: boolean;
+  /** Enable parallel batch processing */
+  enableParallelProcessing?: boolean;
+  /** Maximum number of parallel batches */
+  maxParallelBatches?: number;
 }
 
 /**
@@ -87,7 +92,9 @@ export class BlockchainScanner {
     batchSize: 100,
     cacheExpirationMs: 60000, // 1 minute
     maxScanDepth: 10000, // ~10000 slots = ~1 hour of history
-    verbose: false
+    verbose: false,
+    enableParallelProcessing: true,
+    maxParallelBatches: 3
   };
 
   constructor(config?: ScannerConfig) {
@@ -125,18 +132,17 @@ export class BlockchainScanner {
         console.log(`🔍 Scanning slots ${scanStartSlot} to ${scanEndSlot} for ephemeral keys`);
       }
 
-      // Check cache first
-      const cacheKey = this._getCacheKey(stealthAddress, scanStartSlot, scanEndSlot);
-      const cached = this._getFromCache(cacheKey);
+      // Check cache first using global cache manager
+      const cacheKey = ScanCache.makeKey(stealthAddress, scanStartSlot, scanEndSlot);
+      const scanCache = globalCacheManager.getScanCache();
+      const cached = scanCache.get(cacheKey);
+      
       if (cached) {
         if (this.config.verbose) {
-          console.log(`✓ Using cached scan results (${cached.keys.length} keys)`);
+          console.log(`✓ Using cached scan results (${cached.ephemeralKeys.length} keys)`);
         }
         return {
-          ephemeralKeys: cached.keys,
-          transactionsScanned: 0,
-          startSlot: scanStartSlot,
-          endSlot: scanEndSlot,
+          ...cached,
           duration: Date.now() - startTime
         };
       }
@@ -160,11 +166,29 @@ export class BlockchainScanner {
           console.log(`Found ${signatures.length} transactions for address ${stealthAddress.toBase58()}`);
         }
 
-        // Process transactions in batches
-        for (let i = 0; i < signatures.length; i += this.config.batchSize) {
-          const batch = signatures.slice(i, i + this.config.batchSize);
-          const batchKeys = await this._processTransactionBatch(connection, batch);
-          ephemeralKeys.push(...batchKeys);
+        // Process transactions in batches with optional parallelization
+        if (this.config.enableParallelProcessing && signatures.length > this.config.batchSize) {
+          // Parallel processing for better performance
+          const batches: ConfirmedSignatureInfo[][] = [];
+          for (let i = 0; i < signatures.length; i += this.config.batchSize) {
+            batches.push(signatures.slice(i, i + this.config.batchSize));
+          }
+
+          // Process batches in parallel with concurrency limit
+          for (let i = 0; i < batches.length; i += this.config.maxParallelBatches) {
+            const parallelBatches = batches.slice(i, i + this.config.maxParallelBatches);
+            const results = await Promise.all(
+              parallelBatches.map(batch => this._processTransactionBatch(connection, batch))
+            );
+            results.forEach(batchKeys => ephemeralKeys.push(...batchKeys));
+          }
+        } else {
+          // Sequential processing for smaller sets
+          for (let i = 0; i < signatures.length; i += this.config.batchSize) {
+            const batch = signatures.slice(i, i + this.config.batchSize);
+            const batchKeys = await this._processTransactionBatch(connection, batch);
+            ephemeralKeys.push(...batchKeys);
+          }
         }
       } else {
         // Without a specific address, we can't efficiently scan all transactions
@@ -175,12 +199,15 @@ export class BlockchainScanner {
         }
       }
 
-      // Cache results
-      this._saveToCache(cacheKey, {
-        keys: ephemeralKeys,
-        timestamp: Date.now(),
-        lastSlot: scanEndSlot
-      });
+      // Cache results using global cache manager
+      const resultToCache = {
+        ephemeralKeys,
+        transactionsScanned,
+        startSlot: scanStartSlot,
+        endSlot: scanEndSlot,
+        duration: Date.now() - startTime
+      };
+      scanCache.set(cacheKey, resultToCache, this.config.cacheExpirationMs);
 
       const duration = Date.now() - startTime;
 
@@ -304,15 +331,13 @@ export class BlockchainScanner {
   /**
    * Get cache statistics
    */
-  getCacheStats(): { size: number; entries: number } {
-    let totalKeys = 0;
-    const cacheValues = Array.from(this.cache.values());
-    for (const cached of cacheValues) {
-      totalKeys += cached.keys.length;
-    }
+  getCacheStats(): { size: number; entries: number; hitRate: number } {
+    const scanCache = globalCacheManager.getScanCache();
+    const stats = scanCache.getStats();
     return {
-      size: totalKeys,
-      entries: this.cache.size
+      size: stats.sizeBytes,
+      entries: stats.entries,
+      hitRate: stats.hitRate
     };
   }
 
@@ -354,26 +379,63 @@ export class BlockchainScanner {
 
   /**
    * Process a batch of transactions to extract ephemeral keys
+   * 
+   * Optimized with caching for individual transaction parsing
    */
   private async _processTransactionBatch(
     connection: Connection,
     signatures: ConfirmedSignatureInfo[]
   ): Promise<EphemeralKey[]> {
     const ephemeralKeys: EphemeralKey[] = [];
+    const signaturesToFetch: string[] = [];
+    const signatureIndexMap: Map<string, number> = new Map();
 
-    // Fetch full transaction data
+    // Check cache for each signature
+    const rpcCache = globalCacheManager.getRPCCache();
     const signatureStrings = signatures.map(sig => sig.signature);
-    const transactions = await connection.getParsedTransactions(
-      signatureStrings,
-      {
-        maxSupportedTransactionVersion: 0,
-        commitment: 'confirmed'
-      }
-    );
+    const cachedTransactions: (ParsedTransactionWithMeta | null)[] = new Array(signatureStrings.length).fill(null);
 
-    // Process each transaction
-    for (let i = 0; i < transactions.length; i++) {
-      const tx = transactions[i];
+    for (let i = 0; i < signatureStrings.length; i++) {
+      const sig = signatureStrings[i];
+      const cacheKey = `tx:${sig}`;
+      const cached = rpcCache.get(cacheKey);
+      
+      if (cached) {
+        cachedTransactions[i] = cached;
+      } else {
+        signaturesToFetch.push(sig);
+        signatureIndexMap.set(sig, i);
+      }
+    }
+
+    // Fetch uncached transactions in batch
+    if (signaturesToFetch.length > 0) {
+      const fetchedTransactions = await connection.getParsedTransactions(
+        signaturesToFetch,
+        {
+          maxSupportedTransactionVersion: 0,
+          commitment: 'confirmed'
+        }
+      );
+
+      // Cache fetched transactions and insert into results
+      for (let i = 0; i < signaturesToFetch.length; i++) {
+        const sig = signaturesToFetch[i];
+        const tx = fetchedTransactions[i];
+        const originalIndex = signatureIndexMap.get(sig)!;
+        
+        if (tx) {
+          const cacheKey = `tx:${sig}`;
+          rpcCache.set(cacheKey, tx, 60000); // Cache for 1 minute
+        }
+        
+        cachedTransactions[originalIndex] = tx;
+      }
+    }
+
+    // Process all transactions
+    for (let i = 0; i < cachedTransactions.length; i++) {
+      const tx = cachedTransactions[i];
       const signature = signatureStrings[i];
 
       if (!tx) continue;
@@ -450,54 +512,35 @@ export class BlockchainScanner {
   }
 
   /**
-   * Generate cache key for scan parameters
+   * Optimize signature fetching with batching and filtering
+   * 
+   * This reduces the number of RPC calls by using efficient filtering
    */
-  private _getCacheKey(
-    address: PublicKey | undefined,
+  private async _getSignaturesOptimized(
+    connection: Connection,
+    address: PublicKey,
     startSlot: number,
     endSlot: number
-  ): string {
-    const addrKey = address ? address.toBase58() : 'all';
-    return `${addrKey}:${startSlot}:${endSlot}`;
-  }
-
-  /**
-   * Get cached scan results if valid
-   */
-  private _getFromCache(key: string): CachedScan | null {
-    const cached = this.cache.get(key);
+  ): Promise<ConfirmedSignatureInfo[]> {
+    const cacheKey = `sigs:${address.toBase58()}:${startSlot}:${endSlot}`;
+    const rpcCache = globalCacheManager.getRPCCache();
     
-    if (!cached) {
-      return null;
-    }
-
-    // Check if cache has expired
-    const age = Date.now() - cached.timestamp;
-    if (age > this.config.cacheExpirationMs) {
-      this.cache.delete(key);
-      return null;
-    }
-
-    return cached;
-  }
-
-  /**
-   * Save scan results to cache
-   */
-  private _saveToCache(key: string, scan: CachedScan): void {
-    this.cache.set(key, scan);
-
-    // Implement simple LRU-style cache eviction
-    // If cache grows too large (>100 entries), remove oldest entries
-    if (this.cache.size > 100) {
-      const entries = Array.from(this.cache.entries());
-      entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
-      
-      // Remove oldest 20 entries
-      for (let i = 0; i < 20 && i < entries.length; i++) {
-        this.cache.delete(entries[i][0]);
+    // Check cache first
+    const cached = rpcCache.get(cacheKey);
+    if (cached) {
+      if (this.config.verbose) {
+        console.log(`✓ Using cached signatures (${cached.length} signatures)`);
       }
+      return cached;
     }
+
+    // Fetch signatures
+    const signatures = await this._getSignaturesForAddress(connection, address, startSlot, endSlot);
+    
+    // Cache results
+    rpcCache.set(cacheKey, signatures, 30000); // Cache for 30 seconds
+    
+    return signatures;
   }
 }
 
