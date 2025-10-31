@@ -2,6 +2,20 @@
 
 A privacy-focused SDK for SOL developers using ZK Compression technology.
 
+## 🎉 Beta Release - v0.1.0-beta
+
+> ⚠️ **BETA SOFTWARE**: This SDK is in public beta for development and testing on devnet. **NOT recommended for production use with real funds**. APIs may change before v1.0.0.
+
+### What's New in Beta
+✅ Complete ZK Compression integration  
+✅ Stealth addresses for unlinkable payments  
+✅ Viewing keys for compliance  
+✅ React integration with hooks  
+✅ TypeScript support  
+✅ E2E test coverage  
+
+📖 **Full changelog**: [`/CHANGELOG.md`](../CHANGELOG.md)
+
 ## Overview
 
 Ghost Sol SDK provides a simple interface for private SOL transfers using ZK Compression. The SDK wraps the ZK Compression APIs into easy-to-use functions that developers can integrate into their applications.
@@ -9,6 +23,7 @@ Ghost Sol SDK provides a simple interface for private SOL transfers using ZK Com
 ## Features
 
 - **Simple API**: 3-line interface for private transfers
+- **Privacy Features**: Stealth addresses, viewing keys, and encrypted balances
 - **Wallet Flexibility**: Support for both Node.js Keypair and browser wallet adapters
 - **React Integration**: Built-in React hooks and context providers
 - **TypeScript Support**: Full type definitions and IntelliSense support
@@ -16,9 +31,34 @@ Ghost Sol SDK provides a simple interface for private SOL transfers using ZK Com
 
 ## Installation
 
+### Beta Installation
+
 ```bash
-npm install ghost-sol
+# Install the latest beta version
+npm install ghost-sol@0.1.0-beta
+
+# Or use the beta tag
+npm install ghost-sol@beta
 ```
+
+### Version Pinning (Recommended)
+
+During beta, pin to a specific version to avoid unexpected changes:
+
+```json
+{
+  "dependencies": {
+    "ghost-sol": "0.1.0-beta"
+  }
+}
+```
+
+### Requirements
+
+- **Node.js**: 18+ (recommended: 20+)
+- **TypeScript**: 5.5+ (if using TypeScript)
+- **React**: 18+ (for React integration)
+- **Solana RPC**: Light Protocol-compatible endpoint required
 
 ## Quick Start
 
@@ -184,54 +224,155 @@ The SDK is built with modularity and maintainability in mind:
 - **`GhostSolProvider.tsx`** - React context provider
 - **`useGhostSol.ts`** - React hook for context access
 
-## Development Status
+## Beta Status & Limitations
 
-⚠️ **Note**: This SDK currently uses placeholder implementations for the core compression/transfer/decompression operations. The actual ZK Compression API integration is in development.
+### ✅ What Works in Beta
 
-The SDK demonstrates:
-- ✅ Proper initialization and configuration
-- ✅ Wallet integration (Keypair and browser wallets)
-- ✅ RPC connection management
-- ✅ Balance querying
-- ✅ React integration
-- ✅ Error handling and validation
-- ✅ TypeScript support
+#### Core Functionality
+- **ZK Compression**: Full Light Protocol integration
+- **Compress/Transfer/Decompress**: Complete private SOL operations
+- **Balance Queries**: Check compressed balances
+- **Wallet Integration**: Keypair and browser wallets
+- **React Hooks**: Complete React integration
 
-## Devnet Confidential Transfer (Token-2022) - E2E Test
+#### Advanced Privacy Features
+- **Stealth Addresses** (34+ test assertions)
+  - Generate unlinkable payment addresses
+  - ECDH-based key derivation (secp256k1)
+  - Payment scanning and detection
+  - Spending key derivation
 
-Prereqs:
-- Node 18+
-- Installed deps in workspace root: `npm install`
+- **Viewing Keys** (34 test assertions)
+  - Selective balance disclosure for auditors
+  - Time-limited access with expiration
+  - Permission-based access control
+  - Read-only (no spending authority)
+  - Revocation support
 
-Run the test:
+### ⚠️ Beta Limitations
+
+#### Known Constraints
+- **Devnet Only**: Not tested on mainnet-beta
+- **Prototype ElGamal**: Testing-only encryption (production version in v0.2.0)
+- **Manual Scanning**: Blockchain scanning requires manual ephemeral key collection
+- **SOL Only**: SPL token support coming in future releases
+- **RPC Requirements**: Requires Light Protocol-compatible RPC endpoint
+- **No Transaction History**: Historical queries not yet implemented
+
+#### Coming in v0.2.0
+- 🔄 Automated blockchain scanning
+- 🔄 Production-ready ElGamal encryption (audited)
+- 🔄 Transaction history API
+- 🔄 Performance optimizations
+
+#### Planned for v1.0.0
+- 🔮 Mainnet support
+- 🔮 SPL token privacy
+- 🔮 Hardware wallet integration
+- 🔮 Mobile SDK (React Native)
+
+## Testing
+
+### Available Test Suites
 
 ```bash
-npm run test --workspace sdk -- e2e-confidential-transfer.ts
+# Basic functionality tests
+npm run test
+
+# Privacy prototype tests
+npm run test:privacy
+
+# Dual-mode tests (efficiency vs privacy)
+npm run test:dual-mode
+
+# Viewing keys E2E tests (34 assertions)
+npm run test:e2e-viewing-keys
+
+# Stealth addresses E2E tests (34+ assertions)
+npm run test:e2e-stealth
+
+# Basic workflow E2E tests
+npm run test:e2e-basic
 ```
 
-What it does:
-- Airdrops SOL to two fresh keypairs on Devnet
-- Creates a new Token-2022 mint with Confidential Transfer enabled (prototype)
-- Creates confidential accounts for sender and recipient
-- Attempts an encrypted private transfer and logs the result
+### Test Coverage
 
-Notes:
-- This prototype wires encryption and account flows; full ZK proof generation and all Token-2022 CT instructions may still be in progress. The script will print a warning if the transfer is not yet fully supported.
+- ✅ Core SDK functionality
+- ✅ Wallet integration (Keypair and adapters)
+- ✅ ZK Compression operations
+- ✅ Stealth address generation and scanning
+- ✅ Viewing key compliance workflow
+- ✅ React integration
+- ✅ Error handling
 
-## Contributing
+## 🔒 Security
 
-This SDK follows strict development principles:
+### Beta Security Notice
+
+⚠️ **Important**:
+- This is **BETA software** - not audited for production
+- Do **NOT** use with real funds on mainnet
+- Prototype encryption is for testing only
+- Report security issues via GitHub Security Advisories
+
+### Best Practices
+- Never expose private keys or seed phrases
+- Always verify recipient addresses
+- Use environment variables for sensitive data
+- Test thoroughly on devnet first
+- Revoke viewing keys when no longer needed
+
+## 📚 Documentation
+
+- **[Main README](../README.md)** - Project overview
+- **[CHANGELOG](../CHANGELOG.md)** - Version history and release notes
+- **[MIGRATION_GUIDE](../docs/MIGRATION_GUIDE.md)** - Version migration help
+- **[Implementation Docs](../docs/implementation/)** - Technical details
+- **[Research](../docs/research/)** - Privacy architecture
+
+## 🤝 Contributing
+
+We welcome contributions! This SDK follows strict development principles:
 
 - **Best Practices**: Optimized for performance, maintainability, readability, and modularity
 - **Functional Modularity**: Well-defined, reusable functions with single purposes
 - **File Modularity**: Organized codebase with clear separation of concerns
 - **Documentation**: Comprehensive comments and JSDoc for all functions
+- **Testing**: E2E tests for all features
 - **Readability**: Intuitive naming conventions and logical structure
 
-## License
+### Development Setup
+
+```bash
+# Install dependencies
+npm install
+
+# Build the SDK
+npm run build
+
+# Run tests
+npm test
+
+# Run specific test suite
+npm run test:e2e-viewing-keys
+```
+
+## 📄 License
 
 MIT License - see LICENSE file for details.
 
-## Support
+## 💬 Support
 
-For questions and support, please open an issue on the GitHub repository.
+- **GitHub Issues**: Bug reports and feature requests
+- **GitHub Discussions**: Questions and community support
+- **Discord**: [Join our Discord] (coming soon)
+
+## 🙏 Acknowledgments
+
+- **Light Protocol** - ZK Compression infrastructure
+- **Solana Foundation** - Blockchain platform
+- **Noble Crypto** - Cryptography libraries
+
+---
+
+**Version**: 0.1.0-beta | **Status**: Public Beta | **Release**: 2025-10-31
