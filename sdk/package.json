@@ -27,7 +27,7 @@
     "test:privacy": "tsx test/privacy-prototype.ts",
     "test:dual-mode": "tsx test/dual-mode-test.ts",
     "test:deposit": "tsx test/privacy/deposit.test.ts",
-    "test:e2e-stealth": "tsx test/e2e-stealth-addresses.test.ts"
+    "test:e2e-basic": "tsx test/e2e-basic-workflow.test.ts"
   },
   "dependencies": {
     "@lightprotocol/stateless.js": "^0.21.0",
