@@ -18,6 +18,7 @@ export { GhostSolPrivacy } from './ghost-sol-privacy';
 export { ConfidentialTransferManager } from './confidential-transfer';
 export { EncryptionUtils } from './encryption';
 export { ViewingKeyManager } from './viewing-keys';
+export { WsolWrapper } from './wsol-wrapper';
 
 // Type exports
 export type {
@@ -38,3 +39,7 @@ export {
   ProofGenerationError,
   ViewingKeyError
 } from './errors';
+
+// wSOL wrapper exports
+export { WsolWrapperError } from './wsol-wrapper';
+export type { WrapResult, UnwrapResult } from './wsol-wrapper';

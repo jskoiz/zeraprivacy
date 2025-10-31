@@ -361,3 +361,7 @@ export {
   ProofGenerationError,
   ViewingKeyError
 } from './privacy/errors';
+
+// Export wSOL wrapper for advanced usage
+export { WsolWrapper, WsolWrapperError } from './privacy/wsol-wrapper';
+export type { WrapResult, UnwrapResult } from './privacy/wsol-wrapper';
