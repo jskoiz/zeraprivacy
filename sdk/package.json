@@ -25,7 +25,11 @@
     "dev": "tsup src/index.ts src/react/index.ts --dts --format cjs,esm --watch",
     "test": "tsx test/basic.ts",
     "test:privacy": "tsx test/privacy-prototype.ts",
-    "test:dual-mode": "tsx test/dual-mode-test.ts"
+    "test:dual-mode": "tsx test/dual-mode-test.ts",
+    "test:e2e-privacy": "tsx test/privacy/e2e-privacy-workflow.test.ts",
+    "test:performance": "tsx test/privacy/performance-benchmarks.test.ts",
+    "test:security": "tsx test/privacy/security-tests.test.ts",
+    "test:all-privacy": "npm run test:e2e-privacy && npm run test:performance && npm run test:security"
   },
   "dependencies": {
     "@lightprotocol/stateless.js": "^0.21.0",

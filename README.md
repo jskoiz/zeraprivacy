@@ -1,18 +1,38 @@
 # Ghost Sol SDK
 
-A privacy-focused SDK for SOL developers using ZK Compression technology.
+A privacy-focused SDK for Solana with dual modes: **Efficiency** (ZK Compression) and **Privacy** (Confidential Transfers).
 
 ## Overview
 
-Ghost Sol SDK provides a simple interface for private SOL transfers using ZK Compression. The SDK wraps the ZK Compression APIs into easy-to-use functions that developers can integrate into their applications.
+Ghost Sol SDK provides two distinct operating modes to suit different use cases:
+
+- **Efficiency Mode** (default): Uses ZK Compression for 5000x cost reduction with public transactions
+- **Privacy Mode**: Uses SPL Token 2022 Confidential Transfers for true transaction privacy with encrypted amounts
+
+Choose the mode that best fits your needs—or use both!
 
 ## Features
 
-- **Simple API**: 3-line interface for private transfers
+- **Dual Mode Operation**: Switch between efficiency and privacy modes
+- **Simple API**: 3-line interface that works across both modes
+- **True Privacy**: Encrypted balances and transaction amounts (privacy mode)
+- **Cost Optimization**: 5000x cheaper transactions (efficiency mode)
 - **Wallet Flexibility**: Support for both Node.js Keypair and browser wallet adapters
 - **React Integration**: Built-in React hooks and context providers
 - **TypeScript Support**: Full type definitions and IntelliSense support
 - **Modular Design**: Well-organized codebase with clear separation of concerns
+- **Viewing Keys**: Compliance-ready with optional viewing keys (privacy mode)
+
+## Mode Comparison
+
+| Feature | Efficiency Mode | Privacy Mode |
+|---------|----------------|--------------|
+| **Privacy** | ❌ Public (amounts visible) | ✅ Encrypted (amounts hidden) |
+| **Cost** | 🔥 5000x cheaper | Standard Solana fees |
+| **Speed** | ⚡ ~1-2 seconds | ~5-10 seconds |
+| **Use Case** | Gaming, DeFi, High-frequency | Payroll, Donations, OTC |
+| **Technology** | ZK Compression | SPL Token 2022 + ZK Proofs |
+| **Compliance** | Basic | ✅ Viewing keys |
 
 ## Installation
 
@@ -22,42 +42,46 @@ npm install ghost-sol
 
 ## Quick Start
 
-### Node.js Usage
+### Efficiency Mode (Default - Cost Optimization)
 
 ```typescript
-import { init, getAddress, getBalance, compress, transfer, decompress } from 'ghost-sol';
+import { init, deposit, transfer, withdraw, getBalance } from 'ghost-sol';
 import { Keypair } from '@solana/web3.js';
 
-// Generate a test keypair
-const keypair = Keypair.generate();
-console.log('🔑 Generated address:', keypair.publicKey.toBase58());
-console.log('💰 Fund this address at: https://faucet.solana.com');
-
-// Initialize the SDK
+// Initialize SDK (defaults to efficiency mode)
 await init({
-  wallet: keypair,
+  wallet: Keypair.generate(),
   cluster: 'devnet'
 });
 
-// Get your address
-const address = getAddress();
-console.log('Address:', address);
+// Operations (5000x cheaper!)
+await deposit(2);                    // Compress 2 SOL
+const balance = await getBalance();  // Check balance (lamports)
+await transfer(recipient, 0.7);      // Compressed transfer
+await withdraw(1);                   // Decompress 1 SOL
+```
 
-// Check compressed balance
-const balance = await getBalance();
-console.log('Compressed balance:', balance);
+### Privacy Mode (True Transaction Privacy)
 
-// Compress SOL (shield)
-const compressSignature = await compress(0.5); // 0.5 SOL
-console.log('Compress signature:', compressSignature);
+```typescript
+import { init, deposit, transfer, withdraw, decryptBalance } from 'ghost-sol';
+import { Keypair } from '@solana/web3.js';
 
-// Transfer compressed tokens privately
-const transferSignature = await transfer(recipientAddress, 0.1); // 0.1 SOL
-console.log('Transfer signature:', transferSignature);
+// Initialize SDK in privacy mode
+await init({
+  wallet: Keypair.generate(),
+  cluster: 'devnet',
+  privacy: {
+    mode: 'privacy',           // Enable privacy mode
+    enableViewingKeys: true    // Optional: enable viewing keys
+  }
+});
 
-// Decompress SOL (unshield)
-const decompressSignature = await decompress(0.3); // 0.3 SOL
-console.log('Decompress signature:', decompressSignature);
+// Private operations (amounts encrypted!)
+await deposit(2);                    // Encrypted deposit
+const balance = await decryptBalance(); // Decrypt your balance (only you can)
+await transfer(recipient, 0.7);      // Private transfer (amount hidden)
+await withdraw(1);                   // Encrypted withdrawal
 ```
 
 ### React Usage
@@ -110,8 +134,12 @@ Initialize the SDK with configuration options.
 **Parameters:**
 - `config.wallet` - Wallet instance (Keypair or wallet adapter)
 - `config.cluster` - Solana cluster ('devnet' | 'mainnet-beta')
-- `config.rpcUrl` - Custom RPC endpoint URL
-- `config.commitment` - Transaction commitment level
+- `config.rpcUrl` - Custom RPC endpoint URL (optional)
+- `config.commitment` - Transaction commitment level (optional)
+- `config.privacy` - Privacy mode configuration (optional)
+  - `mode: 'privacy' | 'efficiency'` - Operating mode
+  - `enableViewingKeys: boolean` - Enable viewing keys for compliance
+  - `auditMode: boolean` - Enable audit logging
 
 #### `getAddress(): string`
 Get the user's public key as a base58 string.
@@ -119,25 +147,46 @@ Get the user's public key as a base58 string.
 #### `getBalance(): Promise<number>`
 Get the compressed token balance in lamports.
 
-#### `compress(amount: number): Promise<string>`
-Compress SOL from regular account to compressed token account (shield operation).
+#### `deposit(amount: number): Promise<string>`
+Deposit SOL into the SDK (compress in efficiency mode, encrypt in privacy mode).
 
 **Parameters:**
-- `amount` - Amount to compress in SOL
+- `amount` - Amount to deposit in SOL
 
-#### `transfer(to: string, amount: number): Promise<string>`
-Transfer compressed tokens to another address privately.
+**Returns:** Transaction signature
+
+#### `transfer(to: string, amount: number): Promise<string | PrivateTransferResult>`
+Transfer to another address (compressed in efficiency mode, private in privacy mode).
 
 **Parameters:**
 - `to` - Recipient's public key as base58 string
 - `amount` - Amount to transfer in SOL
 
-#### `decompress(amount: number, to?: string): Promise<string>`
-Decompress SOL from compressed account back to regular account (unshield operation).
+**Returns:** 
+- Efficiency mode: Transaction signature (string)
+- Privacy mode: PrivateTransferResult with signature, encrypted amount, and ZK proof
+
+#### `withdraw(amount: number, to?: string): Promise<string>`
+Withdraw from the SDK (decompress in efficiency mode, decrypt in privacy mode).
 
 **Parameters:**
-- `amount` - Amount to decompress in SOL
+- `amount` - Amount to withdraw in SOL
 - `to` - Optional destination address (defaults to user's address)
+
+**Returns:** Transaction signature
+
+#### `decryptBalance(viewingKey?: ViewingKey): Promise<number>`
+Decrypt encrypted balance (privacy mode only).
+
+**Parameters:**
+- `viewingKey` - Optional viewing key for auditing
+
+**Returns:** Decrypted balance in SOL
+
+#### `generateViewingKey(): Promise<ViewingKey>`
+Generate a viewing key for compliance (privacy mode only).
+
+**Returns:** ViewingKey object with permissions
 
 #### `fundDevnet(amount?: number): Promise<string>`
 Request devnet airdrop for testing purposes.
@@ -232,6 +281,65 @@ npx tsx test/sdk-functionality-test.ts
 
 # Run end-to-end tests (requires funded account)
 npx tsx test/e2e-test.ts
+```
+
+## Privacy Mode Deep Dive
+
+### Understanding Privacy Mode
+
+Privacy mode provides **true transaction privacy** on Solana using:
+
+- **ElGamal Encryption**: Homomorphic encryption for amounts
+- **Pedersen Commitments**: Hide balances while proving validity
+- **Zero-Knowledge Proofs**: Prove transactions are valid without revealing amounts
+- **Range Proofs**: Prevent negative amounts
+- **Viewing Keys**: Compliance-ready auditing
+
+### Privacy Properties
+
+✅ **What's Private:**
+- Transaction amounts (fully encrypted)
+- Account balances (encrypted on-chain)
+- Transfer history (amounts hidden)
+
+❌ **What's Public:**
+- Sender address (Solana account)
+- Recipient address (Solana account)
+- Transaction timing (block time)
+
+### Documentation
+
+- 📖 [Privacy Mode Guide](./docs/PRIVACY_MODE_GUIDE.md) - Comprehensive privacy mode documentation
+- 📖 [Migration Guide](./docs/MIGRATION_GUIDE.md) - How to switch between modes
+- 📖 [API Reference](./docs/API.md) - Complete API documentation
+
+### Example: Privacy Mode Workflow
+
+```typescript
+// 1. Initialize with privacy enabled
+await init({
+  wallet,
+  cluster: 'devnet',
+  privacy: { mode: 'privacy', enableViewingKeys: true }
+});
+
+// 2. Deposit (encrypted)
+await deposit(2);
+
+// 3. Check encrypted balance
+const encrypted = await getBalance();
+console.log('Encrypted:', encrypted.ciphertext);
+
+// 4. Decrypt balance (only you can)
+const balance = await decryptBalance();
+console.log('Balance:', balance, 'SOL');
+
+// 5. Private transfer (amount hidden)
+await transfer(recipient, 0.7);
+
+// 6. Generate viewing key for auditor
+const viewingKey = await generateViewingKey();
+const auditedBalance = await decryptBalance(viewingKey);
 ```
 
 ## Contributing

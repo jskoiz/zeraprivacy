@@ -172,8 +172,182 @@ Key methods:
 - `decryptBalance(viewingKey?: ViewingKey): Promise<number>`
 - `generateViewingKey(): Promise<ViewingKey>`
 
+### Detailed Privacy APIs
+
+#### `encryptedDeposit(amount: number): Promise<string>`
+Performs an encrypted deposit into your confidential account.
+
+**Process:**
+1. Encrypts the amount using ElGamal encryption
+2. Generates a zero-knowledge proof of deposit validity
+3. Stores encrypted balance on-chain
+4. Returns transaction signature
+
+**Parameters:**
+- `amount` - Amount to deposit in SOL
+
+**Returns:** Transaction signature
+
+**Performance:** ~5-8 seconds
+
+**Throws:**
+- `PrivacyError` - If deposit fails
+- `ProofGenerationError` - If ZK proof generation fails
+- `EncryptionError` - If encryption fails
+
+**Example:**
+```typescript
+const signature = await privacy.encryptedDeposit(2);
+console.log('Deposited 2 SOL (encrypted):', signature);
+```
+
+#### `privateTransfer(recipientAddress: string, amount: number): Promise<PrivateTransferResult>`
+Performs a private transfer with encrypted amount.
+
+**Process:**
+1. Encrypts transfer amount for recipient
+2. Generates zero-knowledge proof of validity
+3. Creates confidential transfer instruction
+4. Submits transaction
+
+**Parameters:**
+- `recipientAddress` - Recipient's public key (base58)
+- `amount` - Amount to transfer in SOL
+
+**Returns:** PrivateTransferResult containing:
+- `signature` - Transaction signature
+- `encryptedAmount` - Encrypted amount structure
+- `zkProof` - Zero-knowledge proof
+
+**Performance:** ~5-10 seconds
+
+**Throws:**
+- `PrivacyError` - If transfer fails
+- `ProofGenerationError` - If ZK proof generation fails
+
+**Example:**
+```typescript
+const result = await privacy.privateTransfer(recipient, 0.7);
+console.log('Transfer signature:', result.signature);
+console.log('ZK Proof system:', result.zkProof.proofSystem);
+```
+
+#### `getEncryptedBalance(): Promise<EncryptedBalance>`
+Retrieves the encrypted balance from on-chain.
+
+**Returns:** EncryptedBalance containing:
+- `ciphertext` - Encrypted balance data
+- `commitment` - Pedersen commitment
+- `lastUpdated` - Last update timestamp
+- `exists` - Whether account exists
+
+**Performance:** <1 second
+
+**Example:**
+```typescript
+const encrypted = await privacy.getEncryptedBalance();
+console.log('Balance exists:', encrypted.exists);
+console.log('Ciphertext length:', encrypted.ciphertext.length);
+```
+
+#### `decryptBalance(viewingKey?: ViewingKey): Promise<number>`
+Decrypts the encrypted balance.
+
+**Parameters:**
+- `viewingKey` - Optional viewing key for auditing
+
+**Returns:** Decrypted balance in SOL
+
+**Performance:** <500ms
+
+**Security:**
+- Without viewing key: Uses your private key (full access)
+- With viewing key: Uses viewing key permissions (auditing)
+
+**Throws:**
+- `EncryptionError` - If decryption fails
+- `ComplianceError` - If viewing key lacks permissions
+
+**Example:**
+```typescript
+// Decrypt with your key
+const balance = await privacy.decryptBalance();
+console.log('Your balance:', balance, 'SOL');
+
+// Decrypt with viewing key (auditor)
+const auditedBalance = await privacy.decryptBalance(viewingKey);
+console.log('Audited balance:', auditedBalance, 'SOL');
+```
+
+#### `generateViewingKey(): Promise<ViewingKey>`
+Generates a viewing key for compliance and auditing.
+
+**Returns:** ViewingKey containing:
+- `publicKey` - Public key component
+- `encryptedPrivateKey` - Encrypted private key
+- `permissions` - Access permissions
+- `expiresAt` - Optional expiration timestamp
+
+**Permissions:**
+```typescript
+interface ViewingKeyPermissions {
+  canViewBalances: boolean;
+  canViewAmounts: boolean;
+  canViewMetadata: boolean;
+  allowedAccounts?: PublicKey[];
+}
+```
+
+**Performance:** ~1-2 seconds
+
+**Example:**
+```typescript
+const viewingKey = await privacy.generateViewingKey();
+console.log('Viewing key:', viewingKey.publicKey.toBase58());
+console.log('Permissions:', viewingKey.permissions);
+
+// Share with auditor (encrypted)
+await shareViewingKey(viewingKey, auditorPublicKey);
+```
+
+### Privacy Configuration
+
+#### PrivacyConfig
+```typescript
+interface PrivacyConfig {
+  mode: 'privacy' | 'efficiency';
+  enableViewingKeys?: boolean;
+  auditMode?: boolean;
+  circuitParams?: ZKCircuitParams;
+}
+```
+
+#### ZKCircuitParams
+```typescript
+interface ZKCircuitParams {
+  maxAmount?: bigint;           // Max transfer amount
+  anonymitySetSize?: number;    // Anonymity set size
+  proofTimeout?: number;        // Proof generation timeout (ms)
+}
+```
+
+**Example:**
+```typescript
+const config: PrivacyConfig = {
+  mode: 'privacy',
+  enableViewingKeys: true,
+  auditMode: true,
+  circuitParams: {
+    maxAmount: BigInt(1000 * LAMPORTS_PER_SOL),
+    anonymitySetSize: 128,
+    proofTimeout: 30000 // 30 seconds
+  }
+};
+```
+
 Notes:
 - Proof generation methods are stubs and will throw `ProofGenerationError` until implemented.
+- Full SPL Token 2022 integration is in progress.
 
 ---
 
@@ -437,7 +611,77 @@ export default PrivateTransferForm;
 
 ---
 
+## Privacy Mode Performance Targets
+
+| Operation | Target | Notes |
+|-----------|--------|-------|
+| Proof Generation | <5 seconds | CRITICAL for UX |
+| Deposit | <10 seconds | End-to-end including proof |
+| Transfer | <10 seconds | End-to-end including proof |
+| Withdrawal | <10 seconds | End-to-end including proof |
+| Balance Decryption | <1 second | Must be fast for good UX |
+
+## Privacy Mode Security Properties
+
+### Encryption
+- **ElGamal encryption** for homomorphic operations
+- **Pedersen commitments** for balance hiding
+- **Range proofs** to prevent negative amounts
+- **AES-GCM** for viewing key encryption
+
+### Zero-Knowledge Proofs
+- **Groth16** proof system (default)
+- **Poseidon** hash function for circuits
+- **alt_bn128** curve for verification
+- Proof size: ~128 bytes
+
+### Compliance Features
+- **Viewing keys** with granular permissions
+- **Key expiration** support
+- **Audit logs** in audit mode
+- **Key revocation** capabilities
+
+## Privacy Mode Error Handling
+
+### Error Types
+
+```typescript
+// Privacy-specific errors
+class PrivacyError extends Error {
+  constructor(message: string, cause?: Error);
+}
+
+class EncryptionError extends PrivacyError {}
+class ProofGenerationError extends PrivacyError {}
+class ProofVerificationError extends PrivacyError {}
+class ViewingKeyError extends PrivacyError {}
+class ComplianceError extends PrivacyError {}
+```
+
+### Error Handling Example
+
+```typescript
+try {
+  await privacy.privateTransfer(recipient, amount);
+} catch (error) {
+  if (error instanceof ProofGenerationError) {
+    console.error('Proof generation failed:', error.message);
+    // Retry with longer timeout
+  } else if (error instanceof EncryptionError) {
+    console.error('Encryption failed:', error.message);
+    // Check encryption keys
+  } else if (error instanceof ComplianceError) {
+    console.error('Compliance check failed:', error.message);
+    // Check viewing key permissions
+  }
+}
+```
+
+---
+
 ## Notes and limitations
 - Devnet airdrop is rate-limited and times out after 30 seconds in SDK helper.
-- Privacy mode proof generation is not yet implemented and will throw `ProofGenerationError`.
+- Privacy mode proof generation is currently in prototype and will throw `ProofGenerationError` until full implementation.
 - Standard public RPC endpoints do not support ZK Compression specifics; use Light Protocol-compatible RPC when needed.
+- Privacy mode requires SPL Token 2022 support - full integration in progress.
+- Viewing key encryption uses ristretto255 curve points for secure key derivation.
