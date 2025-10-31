@@ -1,0 +1,79 @@
+# Don't publish these to npm
+
+# Source files (only publish dist/)
+src/
+*.ts
+!*.d.ts
+tsconfig.json
+tsup.config.ts
+
+# Tests
+test/
+tests/
+*.test.ts
+*.test.js
+*.spec.ts
+*.spec.js
+
+# Documentation (keep only essential docs)
+docs/internal/
+docs/implementation/
+docs/research/
+docs/hackathon/
+docs/workflow/
+docs/deployment/
+docs/reports/
+docs/product/
+ALIGNMENT_CHECK.md
+
+# Development files
+.vscode/
+.idea/
+.cursor/
+instructions/
+*.swp
+*.swo
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Environment files
+.env
+.env.*
+env.example
+
+# Scripts (internal use only)
+scripts/
+
+# Examples (can be linked from docs)
+examples/
+
+# Git files
+.git/
+.gitignore
+.gitattributes
+
+# Build artifacts
+*.tsbuildinfo
+.cache
+tmp/
+temp/
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Lock files (let users manage their own)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Coverage
+coverage/
+.nyc_output
