@@ -42,6 +42,8 @@ import {
 import { loadAndValidateConfig, validateNoSensitiveExposure, EnvConfigError } from './env-config';
 import { loadRpcConfig, createRpcConfigFromUrl } from './rpc-config';
 import { RpcManager, createRpcManager } from './rpc-manager';
+import { getMonitor } from './monitoring';
+import { getAnalytics } from './analytics';
 
 /**
  * Main GhostSol SDK class providing privacy-focused Solana operations
@@ -72,7 +74,17 @@ export class GhostSol {
    * @throws GhostSolError if initialization fails
    */
   async init(config: GhostSolConfig): Promise<void> {
+    const monitor = getMonitor();
+    const analytics = getAnalytics();
+    const endTimer = monitor?.startTimer('init');
+    
     try {
+      // Track initialization
+      analytics?.trackOperationStart('init', {
+        cluster: config.cluster,
+        hasRpcConfig: !!config.rpcConfig,
+      });
+
       // Validate environment configuration for security
       try {
         validateNoSensitiveExposure();
@@ -80,6 +92,11 @@ export class GhostSol {
         // Log warning but don't fail initialization if in development
         if (error instanceof EnvConfigError) {
           console.warn('[GhostSol] Security warning:', error.message);
+          monitor?.trackError(error, { 
+            operation: 'init', 
+            severity: 'low',
+            metadata: { phase: 'security_validation' }
+          });
         }
       }
       
@@ -183,7 +200,24 @@ export class GhostSol {
 
       this.initialized = true;
       
+      // Track successful initialization
+      endTimer?.(true);
+      analytics?.trackFeature('sdk_initialization', {
+        cluster: config.cluster,
+        success: true,
+      });
+      
     } catch (error) {
+      // Track initialization failure
+      endTimer?.(false);
+      monitor?.trackError(
+        error instanceof Error ? error : new Error('Unknown initialization error'),
+        { operation: 'init', severity: 'critical' }
+      );
+      analytics?.trackError('initialization_failed', {
+        cluster: config.cluster,
+      });
+      
       throw new GhostSolError(
         `Failed to initialize GhostSol SDK: ${error instanceof Error ? error.message : 'Unknown error'}`,
         'INIT_ERROR',
@@ -215,6 +249,10 @@ export class GhostSol {
   async getBalance(): Promise<number> {
     this._assertInitialized();
     
+    const monitor = getMonitor();
+    const analytics = getAnalytics();
+    const endTimer = monitor?.startTimer('getBalance');
+    
     try {
       // Use balance cache for performance
       const detailedBalance = await getCompressedBalance(
@@ -223,13 +261,24 @@ export class GhostSol {
         this.balanceCache
       );
       
+      endTimer?.(true);
+      analytics?.trackFeature('get_balance', { success: true });
+      
       return detailedBalance.lamports;
       
     } catch (error) {
       // If no compressed account exists, return 0
       if (error instanceof Error && error.message.includes('not found')) {
+        endTimer?.(true);
         return 0;
       }
+      
+      endTimer?.(false);
+      monitor?.trackError(
+        error instanceof Error ? error : new Error('Unknown balance error'),
+        { operation: 'getBalance', severity: 'medium' }
+      );
+      analytics?.trackError('get_balance_failed');
       
       throw new GhostSolError(
         `Failed to get compressed balance: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -252,9 +301,15 @@ export class GhostSol {
   async compress(lamports: number): Promise<string> {
     this._assertInitialized();
     
+    const monitor = getMonitor();
+    const analytics = getAnalytics();
+    const endTimer = monitor?.startTimer('compress');
+    
     // Validate input
     if (lamports <= 0) {
-      throw new ValidationError('Amount must be greater than 0');
+      const validationError = new ValidationError('Amount must be greater than 0');
+      monitor?.trackError(validationError, { operation: 'compress', severity: 'low' });
+      throw validationError;
     }
 
     try {
@@ -271,9 +326,19 @@ export class GhostSol {
       // Invalidate balance cache after successful compression
       this.balanceCache.invalidate(this.wallet.publicKey.toBase58());
       
+      endTimer?.(true);
+      analytics?.trackFeature('compress', { success: true });
+      
       return result.signature;
       
     } catch (error) {
+      endTimer?.(false);
+      monitor?.trackError(
+        error instanceof Error ? error : new Error('Unknown compression error'),
+        { operation: 'compress', severity: 'high' }
+      );
+      analytics?.trackError('compress_failed');
+      
       // Re-throw specialized errors as-is, wrap others
       if (error instanceof CompressionError || error instanceof ValidationError) {
         throw error;
@@ -300,9 +365,15 @@ export class GhostSol {
   async transfer(recipientAddress: string, lamports: number): Promise<string> {
     this._assertInitialized();
     
+    const monitor = getMonitor();
+    const analytics = getAnalytics();
+    const endTimer = monitor?.startTimer('transfer');
+    
     // Validate input
     if (lamports <= 0) {
-      throw new ValidationError('Amount must be greater than 0');
+      const validationError = new ValidationError('Amount must be greater than 0');
+      monitor?.trackError(validationError, { operation: 'transfer', severity: 'low' });
+      throw validationError;
     }
 
     try {
@@ -322,9 +393,19 @@ export class GhostSol {
       // Invalidate balance cache after successful transfer
       this.balanceCache.invalidate(this.wallet.publicKey.toBase58());
       
+      endTimer?.(true);
+      analytics?.trackFeature('transfer', { success: true });
+      
       return result.signature;
       
     } catch (error) {
+      endTimer?.(false);
+      monitor?.trackError(
+        error instanceof Error ? error : new Error('Unknown transfer error'),
+        { operation: 'transfer', severity: 'high' }
+      );
+      analytics?.trackError('transfer_failed');
+      
       // Re-throw specialized errors as-is, wrap others
       if (error instanceof TransferError || error instanceof ValidationError) {
         throw error;
@@ -351,9 +432,15 @@ export class GhostSol {
   async decompress(lamports: number, destination?: string): Promise<string> {
     this._assertInitialized();
     
+    const monitor = getMonitor();
+    const analytics = getAnalytics();
+    const endTimer = monitor?.startTimer('decompress');
+    
     // Validate input
     if (lamports <= 0) {
-      throw new ValidationError('Amount must be greater than 0');
+      const validationError = new ValidationError('Amount must be greater than 0');
+      monitor?.trackError(validationError, { operation: 'decompress', severity: 'low' });
+      throw validationError;
     }
 
     try {
@@ -373,9 +460,19 @@ export class GhostSol {
       // Invalidate balance cache after successful decompression
       this.balanceCache.invalidate(this.wallet.publicKey.toBase58());
       
+      endTimer?.(true);
+      analytics?.trackFeature('decompress', { success: true });
+      
       return result.signature;
       
     } catch (error) {
+      endTimer?.(false);
+      monitor?.trackError(
+        error instanceof Error ? error : new Error('Unknown decompression error'),
+        { operation: 'decompress', severity: 'high' }
+      );
+      analytics?.trackError('decompress_failed');
+      
       // Re-throw specialized errors as-is, wrap others
       if (error instanceof DecompressionError || error instanceof ValidationError) {
         throw error;

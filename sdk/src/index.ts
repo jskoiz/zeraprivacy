@@ -540,3 +540,37 @@ export {
 export type {
   EndpointHealthInfo
 } from './core/rpc-manager';
+
+// Export monitoring and analytics
+export {
+  initializeMonitoring,
+  getMonitor,
+  disableMonitoring,
+  SdkMonitor
+} from './core/monitoring';
+
+export type {
+  MonitoringConfig,
+  ErrorEvent,
+  PerformanceMetric,
+  HealthCheckResult,
+  MonitoringStats,
+  Alert,
+  AlertThresholds
+} from './core/monitoring';
+
+export {
+  initializeAnalytics,
+  getAnalytics,
+  disableAnalytics,
+  SdkAnalytics,
+  anonymizeOperationProps
+} from './core/analytics';
+
+export type {
+  AnalyticsConfig,
+  AnalyticsEvent,
+  AnalyticsEventType,
+  UsageStats,
+  FeatureUsage
+} from './core/analytics';
