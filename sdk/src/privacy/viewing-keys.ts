@@ -25,6 +25,7 @@ import {
 import { EncryptionError, PrivacyError } from './errors';
 import { ExtendedWalletAdapter } from '../core/types';
 import { EncryptionUtils } from './encryption';
+import { ProductionElGamal, ElGamalUtils } from './elgamal-production';
 import { ristretto255, ed25519 } from '@noble/curves/ed25519';
 import { sha256 } from '@noble/hashes/sha256';
 import { sha512 } from '@noble/hashes/sha512';
