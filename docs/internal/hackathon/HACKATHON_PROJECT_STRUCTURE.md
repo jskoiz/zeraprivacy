@@ -56,7 +56,7 @@
 ### 📦 Monorepo Organization
 
 ```
-ghost-sol/
+zera/
 ├── 📁 sdk/                          # Core SDK Package
 │   ├── 📁 src/
 │   │   ├── 📁 core/                 # Efficiency Mode (ZK Compression)
@@ -66,7 +66,7 @@ ghost-sol/
 │   │   │   ├── relayer.ts           # Fee payment relayer
 │   │   │   ├── compression.ts       # ZK compression operations
 │   │   │   ├── balance.ts           # Balance queries
-│   │   │   ├── ghost-sol.ts         # Main efficiency SDK class
+│   │   │   ├── zera.ts         # Main efficiency SDK class
 │   │   │   └── errors.ts            # Error handling
 │   │   │
 │   │   ├── 📁 privacy/              # Privacy Mode (Confidential Transfers)
@@ -74,12 +74,12 @@ ghost-sol/
 │   │   │   ├── encryption.ts        # ElGamal encryption utilities
 │   │   │   ├── confidential-transfer.ts  # SPL Token 2022 CT operations
 │   │   │   ├── viewing-keys.ts      # Compliance & auditing
-│   │   │   ├── ghost-sol-privacy.ts # Main privacy SDK class
+│   │   │   ├── zera-privacy.ts # Main privacy SDK class
 │   │   │   └── errors.ts            # Privacy error handling
 │   │   │
 │   │   ├── 📁 react/                # React Integration
-│   │   │   ├── GhostSolProvider.tsx # Context provider
-│   │   │   ├── useGhostSol.ts       # React hooks
+│   │   │   ├── ZeraProvider.tsx # Context provider
+│   │   │   ├── useZera.ts       # React hooks
 │   │   │   ├── browserApi.ts        # Browser wallet adapters
 │   │   │   └── index.ts             # React exports
 │   │   │
@@ -135,7 +135,7 @@ ghost-sol/
 
 | File | Purpose | Key Functionality |
 |------|---------|-------------------|
-| `ghost-sol.ts` | Main SDK class | Initialize, compress, transfer, decompress |
+| `zera.ts` | Main SDK class | Initialize, compress, transfer, decompress |
 | `compression.ts` | ZK operations | Compress/decompress token accounts |
 | `balance.ts` | Balance queries | Get compressed balance information |
 | `wallet.ts` | Wallet handling | Support Keypair & browser wallets |
@@ -158,7 +158,7 @@ ghost-sol/
 
 | File | Purpose | Key Functionality |
 |------|---------|-------------------|
-| `ghost-sol-privacy.ts` | Privacy SDK class | Encrypted deposits, private transfers |
+| `zera-privacy.ts` | Privacy SDK class | Encrypted deposits, private transfers |
 | `confidential-transfer.ts` | SPL Token 2022 CT | Mint creation, account config, transfers |
 | `encryption.ts` | Cryptography | ElGamal encryption, Pedersen commitments |
 | `viewing-keys.ts` | Compliance | Generate keys for auditor access |
@@ -186,9 +186,9 @@ ghost-sol/
 
 ```typescript
 // Provider Setup
-<GhostSolProvider cluster="devnet" privacy={{ mode: 'privacy' }}>
+<ZeraProvider cluster="devnet" privacy={{ mode: 'privacy' }}>
   <YourApp />
-</GhostSolProvider>
+</ZeraProvider>
 
 // Hook Usage
 function YourApp() {
@@ -201,7 +201,7 @@ function YourApp() {
     transfer,          // Transfer function
     withdraw,          // Withdraw function
     decryptBalance     // Decrypt balance (privacy mode)
-  } = useGhostSol();
+  } = useZera();
   
   // Use functions directly in your UI
 }
@@ -383,7 +383,7 @@ for (const employee of employees) {
 ### 2. **Anonymous Donations**
 ```typescript
 // Donation platform with privacy
-const donationAddress = "GhostSolDonations...";
+const donationAddress = "ZeraDonations...";
 await transfer(donationAddress, 100); // Amount and donor hidden
 ```
 
@@ -492,12 +492,12 @@ GhostSOL is built on extensive research into Solana's privacy technologies:
 
 ### Installation
 ```bash
-npm install ghost-sol
+npm install zera
 ```
 
 ### Quick Start (Privacy Mode)
 ```typescript
-import { init, deposit, transfer, withdraw } from 'ghost-sol';
+import { init, deposit, transfer, withdraw } from 'zera';
 import { Keypair } from '@solana/web3.js';
 
 const keypair = Keypair.generate();
@@ -520,18 +520,18 @@ await withdraw(0.5);                   // Unshield 0.5 SOL
 
 ### React Example
 ```tsx
-import { GhostSolProvider, useGhostSol } from 'ghost-sol/react';
+import { ZeraProvider, useZera } from 'zera/react';
 
 function App() {
   return (
-    <GhostSolProvider cluster="devnet" privacy={{ mode: 'privacy' }}>
+    <ZeraProvider cluster="devnet" privacy={{ mode: 'privacy' }}>
       <PrivateWallet />
-    </GhostSolProvider>
+    </ZeraProvider>
   );
 }
 
 function PrivateWallet() {
-  const { deposit, transfer, balance } = useGhostSol();
+  const { deposit, transfer, balance } = useZera();
   
   return (
     <div>
@@ -624,7 +624,7 @@ GhostSOL aims to be the **definitive privacy SDK for Solana** by combining:
 
 ## 📞 Contact & Links
 
-- **GitHub**: [Repository](https://github.com/your-org/ghost-sol)
+- **GitHub**: [Repository](https://github.com/your-org/zera)
 - **Documentation**: [Docs Site](https://docs.ghostsol.io)
 - **Demo**: Run locally (see above)
 - **Support**: Open GitHub issue

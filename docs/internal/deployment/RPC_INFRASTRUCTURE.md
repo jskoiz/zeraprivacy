@@ -6,7 +6,7 @@
 
 ## Overview
 
-The GhostSol SDK includes a production-grade RPC infrastructure system that provides:
+The Zera SDK includes a production-grade RPC infrastructure system that provides:
 
 - ✅ **Multiple RPC Provider Support** - Helius, QuickNode, Alchemy, Triton, and custom endpoints
 - ✅ **Automatic Failover** - Seamless switching between endpoints on failure

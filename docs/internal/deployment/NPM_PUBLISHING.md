@@ -1,6 +1,6 @@
 # NPM Publishing Guide
 
-This guide explains how to publish the Ghost Sol SDK to npm, both manually and using automation.
+This guide explains how to publish the Zera SDK to npm, both manually and using automation.
 
 ## Table of Contents
 
@@ -42,7 +42,7 @@ This guide explains how to publish the Ghost Sol SDK to npm, both manually and u
 ### 2. Organization Access
 
 If publishing under an organization:
-- Ensure you have publish permissions for the `ghost-sol` package
+- Ensure you have publish permissions for the `zera` package
 - Contact the organization owner if you need access
 
 ### 3. Environment Setup
@@ -112,10 +112,10 @@ Users can install beta releases using:
 
 ```bash
 # Install latest beta
-npm install ghost-sol@beta
+npm install zera@beta
 
 # Install specific beta version
-npm install ghost-sol@0.1.0-beta.0
+npm install zera@0.1.0-beta.0
 ```
 
 ## Publishing Stable Releases
@@ -157,10 +157,10 @@ cd ..
 
 ```bash
 # Install latest stable version (default)
-npm install ghost-sol
+npm install zera
 
 # Install specific version
-npm install ghost-sol@0.1.0
+npm install zera@0.1.0
 ```
 
 ## Automated Publishing with GitHub Actions
@@ -229,7 +229,7 @@ The GitHub Actions workflow:
 
 ### Semantic Versioning
 
-Ghost Sol follows [Semantic Versioning (SemVer)](https://semver.org/):
+Zera follows [Semantic Versioning (SemVer)](https://semver.org/):
 
 - **MAJOR** (X.0.0): Breaking changes
 - **MINOR** (0.X.0): New features (backwards compatible)
@@ -270,7 +270,7 @@ npm version prerelease --preid=beta --no-git-tag-version
 
 ```json
 {
-  "name": "ghost-sol",
+  "name": "zera",
   "version": "0.1.0",
   "description": "Privacy SDK for Solana developers using ZK Compression",
   "main": "./dist/index.js",
@@ -323,8 +323,8 @@ After publishing:
 
 1. **Check npm registry**:
    ```bash
-   npm view ghost-sol
-   npm view ghost-sol@beta
+   npm view zera
+   npm view zera@beta
    ```
 
 2. **Test installation**:
@@ -332,16 +332,16 @@ After publishing:
    # In a test directory
    mkdir test-install && cd test-install
    npm init -y
-   npm install ghost-sol@beta
+   npm install zera@beta
    ```
 
 3. **Verify exports**:
    ```bash
-   node -e "console.log(require('ghost-sol'))"
+   node -e "console.log(require('zera'))"
    ```
 
 4. **Check on npmjs.com**:
-   - Visit https://www.npmjs.com/package/ghost-sol
+   - Visit https://www.npmjs.com/package/zera
    - Verify version, description, and README display correctly
 
 ## Troubleshooting
@@ -353,7 +353,7 @@ After publishing:
 ### "You do not have permission to publish"
 
 **Solutions**:
-- Verify package name is available: `npm view ghost-sol`
+- Verify package name is available: `npm view zera`
 - Check organization membership if using scoped package
 - Contact package owner for access
 
@@ -389,7 +389,7 @@ npm login
 **Solution**:
 - Beta releases must use `--tag beta` flag
 - Verify version format: `X.Y.Z-beta.N`
-- Check tag exists: `npm dist-tag ls ghost-sol`
+- Check tag exists: `npm dist-tag ls zera`
 
 ### Cannot publish over existing version
 
@@ -402,17 +402,17 @@ npm login
 
 ```bash
 # View package info
-npm view ghost-sol
-npm view ghost-sol versions
-npm view ghost-sol dist-tags
+npm view zera
+npm view zera versions
+npm view zera dist-tags
 
 # Manage tags
-npm dist-tag ls ghost-sol
-npm dist-tag add ghost-sol@0.1.0-beta.1 beta
-npm dist-tag rm ghost-sol beta
+npm dist-tag ls zera
+npm dist-tag add zera@0.1.0-beta.1 beta
+npm dist-tag rm zera beta
 
 # Unpublish (only within 72 hours)
-npm unpublish ghost-sol@0.1.0-beta.1
+npm unpublish zera@0.1.0-beta.1
 
 # Check what will be published
 npm pack --dry-run

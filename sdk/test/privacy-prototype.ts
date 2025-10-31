@@ -9,14 +9,14 @@
  */
 
 import { Keypair, LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { GhostSolPrivacy } from '../src/privacy/ghost-sol-privacy';
+import { ZeraPrivacy } from '../src/privacy/zera-privacy';
 import { EncryptionUtils } from '../src/privacy/encryption';
 
 /**
  * Test the privacy prototype implementation
  */
 async function runPrivacyPrototypeTest() {
-  console.log('🔐 Starting GhostSol Privacy Prototype Test');
+  console.log('🔐 Starting Zera Privacy Prototype Test');
   console.log('===========================================');
   console.log('🎯 Goal: Demonstrate TRUE privacy vs ZK Compression efficiency');
   console.log('');
@@ -116,9 +116,9 @@ async function testEncryptionUtils() {
 async function testPrivacySdkInit(testKeypair: Keypair) {
   try {
     // Create privacy SDK instance
-    const privacySDK = new GhostSolPrivacy();
+    const privacySDK = new ZeraPrivacy();
     
-    console.log('   🏗️  Creating GhostSolPrivacy instance...');
+    console.log('   🏗️  Creating ZeraPrivacy instance...');
     console.log('   ✅ Privacy SDK instantiated');
     
     // Test configuration

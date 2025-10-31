@@ -12,7 +12,7 @@
  * All monitoring is privacy-respecting and can be disabled/configured.
  */
 
-import { GhostSolError } from './errors';
+import { ZeraError } from './errors';
 
 /**
  * Monitoring configuration options
@@ -224,7 +224,7 @@ export class SdkMonitor {
   /**
    * Track an error
    */
-  trackError(error: Error | GhostSolError, context?: {
+  trackError(error: Error | ZeraError, context?: {
     operation?: string;
     metadata?: Record<string, any>;
     severity?: ErrorEvent['severity'];

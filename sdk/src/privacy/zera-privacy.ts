@@ -1,5 +1,5 @@
 /**
- * privacy/ghost-sol-privacy.ts
+ * privacy/zera-privacy.ts
  * 
  * Purpose: Main privacy class providing true transaction privacy on Solana
  * 
@@ -50,7 +50,7 @@ import { ExtendedWalletAdapter } from '../core/types';
  * actual privacy by encrypting balances and transaction amounts using
  * SPL Token 2022 Confidential Transfers.
  */
-export class GhostSolPrivacy {
+export class ZeraPrivacy {
   private connection!: Connection;
   private wallet!: ExtendedWalletAdapter;
   private config!: PrivacyConfig;

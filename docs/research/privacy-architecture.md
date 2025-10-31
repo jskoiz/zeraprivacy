@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document defines the technical architecture for implementing true transaction privacy in the GhostSol SDK, transforming it from a ZK Compression efficiency tool to a genuine privacy solution.
+This document defines the technical architecture for implementing true transaction privacy in the Zera SDK, transforming it from a ZK Compression efficiency tool to a genuine privacy solution.
 
 ## Core Privacy Principles
 
@@ -30,7 +30,7 @@ privacy/
 ├── index.ts                 # Main exports and public API
 ├── types.ts                 # TypeScript type definitions
 ├── errors.ts                # Privacy-specific error classes
-├── ghost-sol-privacy.ts     # Main privacy class implementation
+├── zera-privacy.ts     # Main privacy class implementation
 ├── confidential-transfer.ts # SPL Token 2022 integration
 ├── encryption.ts            # Twisted ElGamal encryption utilities
 ├── viewing-keys.ts          # Compliance and auditing features
@@ -47,18 +47,18 @@ privacy/
 ### Layer 2: Dual-Mode SDK (`sdk/src/core/`)
 
 ```typescript
-// Updated GhostSol class supports both modes
-class GhostSol {
-  private privacyMode?: GhostSolPrivacy;
-  private efficiencyMode?: GhostSolCompression; // Current implementation
+// Updated Zera class supports both modes
+class Zera {
+  private privacyMode?: ZeraPrivacy;
+  private efficiencyMode?: ZeraCompression; // Current implementation
   
-  async init(config: GhostSolConfig) {
+  async init(config: ZeraConfig) {
     if (config.privacy?.mode === 'privacy') {
-      this.privacyMode = new GhostSolPrivacy();
+      this.privacyMode = new ZeraPrivacy();
       await this.privacyMode.init(this.connection, this.wallet, config.privacy);
     } else {
       // Default to efficiency mode (current ZK Compression)
-      this.efficiencyMode = new GhostSolCompression();
+      this.efficiencyMode = new ZeraCompression();
       // ... existing initialization
     }
   }
@@ -313,4 +313,4 @@ await ghostSol.privateTransfer(0.5); // Private transfer (unlinkable)
 - **Documentation**: Complete guides for privacy features
 - **Developer Adoption**: Positive feedback on privacy utilities
 
-This architecture provides the foundation for transforming GhostSol from an efficiency tool to a true privacy solution while maintaining backward compatibility and regulatory compliance.
+This architecture provides the foundation for transforming Zera from an efficiency tool to a true privacy solution while maintaining backward compatibility and regulatory compliance.

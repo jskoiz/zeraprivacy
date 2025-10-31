@@ -89,7 +89,7 @@ const viewingKey = await generateViewingKey(); // For auditors
   - Balance commitment management
 
 **Week 2: Operations**
-- [ ] Implement `encryptedDeposit()` in `GhostSolPrivacy`
+- [ ] Implement `encryptedDeposit()` in `ZeraPrivacy`
 - [ ] Implement `privateTransfer()` with ZK proofs
 - [ ] Implement `encryptedWithdraw()`
 - [ ] Test on devnet with real encrypted transfers
@@ -118,7 +118,7 @@ sdk/src/
 │   ├── confidential-transfer.ts  ⬅️ START HERE (Week 1)
 │   ├── encryption.ts             ⬅️ ALSO Week 1
 │   ├── viewing-keys.ts           ⬅️ Week 3
-│   ├── ghost-sol-privacy.ts      ⬅️ Implement operations (Week 2-3)
+│   ├── zera-privacy.ts      ⬅️ Implement operations (Week 2-3)
 │   ├── types.ts                  ⬅️ Already done (extend as needed)
 │   └── errors.ts                 ⬅️ Already done
 ```

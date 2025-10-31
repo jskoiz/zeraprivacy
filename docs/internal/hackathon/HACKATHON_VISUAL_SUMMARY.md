@@ -42,7 +42,7 @@
                     └────────┬────────┘
                              │
                              │ import { init, deposit, transfer }
-                             │ from 'ghost-sol'
+                             │ from 'zera'
                              │
                     ┌────────▼────────┐
                     │  GhostSOL SDK   │
@@ -78,7 +78,7 @@
 ## 📊 Project Organization
 
 ```
-ghost-sol/
+zera/
 │
 ├── 🎯 sdk/                           ← Core SDK Package
 │   ├── src/core/                     ← Efficiency mode (8 files)
@@ -416,7 +416,7 @@ Run locally:
 ```
 ┌─────────────────────────────────────────────────────────┐
 │  📁 Repository:                                         │
-│     github.com/your-org/ghost-sol                       │
+│     github.com/your-org/zera                       │
 │                                                         │
 │  📚 Full Documentation:                                 │
 │     /HACKATHON_PROJECT_STRUCTURE.md                     │

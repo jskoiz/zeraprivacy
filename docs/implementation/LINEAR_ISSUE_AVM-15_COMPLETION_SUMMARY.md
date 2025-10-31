@@ -10,7 +10,7 @@
 
 ## Implementation Summary
 
-### 1. Updated `sdk/src/privacy/ghost-sol-privacy.ts`
+### 1. Updated `sdk/src/privacy/zera-privacy.ts`
 
 **Implemented the `encryptedDeposit()` method** with the following features:
 
@@ -241,7 +241,7 @@ Implementation follows specifications from:
 
 ## Files Modified
 
-1. **`sdk/src/privacy/ghost-sol-privacy.ts`**
+1. **`sdk/src/privacy/zera-privacy.ts`**
    - Updated `encryptedDeposit()` method (lines 190-231)
    - Implemented `_generateDepositProof()` method (lines 421-456)
 

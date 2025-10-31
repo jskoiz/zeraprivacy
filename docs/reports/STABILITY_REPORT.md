@@ -78,8 +78,8 @@ Prevent privacy modules from loading until actually needed:
 ```typescript
 // In sdk/src/index.ts, use dynamic imports:
 if (mode === 'privacy') {
-  const { GhostSolPrivacy } = await import('./privacy/ghost-sol-privacy');
-  privacyInstance = new GhostSolPrivacy();
+  const { ZeraPrivacy } = await import('./privacy/zera-privacy');
+  privacyInstance = new ZeraPrivacy();
   // ...
 }
 ```

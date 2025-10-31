@@ -20,7 +20,7 @@
  */
 
 import { Connection, Keypair, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { GhostSolPrivacy } from '../src/privacy/ghost-sol-privacy';
+import { ZeraPrivacy } from '../src/privacy/zera-privacy';
 import { ViewingKeyManager, ViewingKeyConfig } from '../src/privacy/viewing-keys';
 import { EncryptionUtils } from '../src/privacy/encryption';
 import { 
@@ -156,7 +156,7 @@ async function assertRejects(fn: () => Promise<any>, message: string) {
  * Main test runner
  */
 async function runViewingKeysE2ETest() {
-  log('\n🔐 GhostSol - Viewing Keys Compliance Workflow E2E Test', 'bright');
+  log('\n🔐 Zera - Viewing Keys Compliance Workflow E2E Test', 'bright');
   log('=' .repeat(80), 'cyan');
   logInfo('Testing complete viewing keys workflow for compliance and auditing');
   logInfo('Ensuring auditors can decrypt balances without being able to spend funds\n');
@@ -594,9 +594,9 @@ async function runViewingKeysE2ETest() {
     logInfo(`Account B derivation: ${key9b.derivationPath}`);
     
     // =================================================================
-    // Test 10: Integration with GhostSolPrivacy (if available)
+    // Test 10: Integration with ZeraPrivacy (if available)
     // =================================================================
-    logStep('Test 10: Integration with GhostSolPrivacy SDK');
+    logStep('Test 10: Integration with ZeraPrivacy SDK');
     
     try {
       const privacyConfig: PrivacyConfig = {
@@ -604,16 +604,16 @@ async function runViewingKeysE2ETest() {
         enableViewingKeys: true,
       };
       
-      const ghostSolPrivacy = new GhostSolPrivacy();
+      const ghostSolPrivacy = new ZeraPrivacy();
       
-      logInfo('Attempting to initialize GhostSolPrivacy with viewing keys enabled...');
+      logInfo('Attempting to initialize ZeraPrivacy with viewing keys enabled...');
       
       // Note: This may fail if confidential transfers aren't fully supported on devnet
       // That's expected and acceptable for this test
       try {
         await ghostSolPrivacy.init(connection, aliceWallet, privacyConfig);
         
-        logSuccess('GhostSolPrivacy initialized with viewing keys support');
+        logSuccess('ZeraPrivacy initialized with viewing keys support');
         
         // Try to generate a viewing key through the SDK
         const sdkViewingKey = await ghostSolPrivacy.generateViewingKey({
@@ -627,18 +627,18 @@ async function runViewingKeysE2ETest() {
         
         assert(
           sdkViewingKey !== undefined,
-          'GhostSolPrivacy can generate viewing keys'
+          'ZeraPrivacy can generate viewing keys'
         );
         
-        logSuccess('Viewing keys fully integrated with GhostSolPrivacy SDK');
+        logSuccess('Viewing keys fully integrated with ZeraPrivacy SDK');
         
       } catch (initError) {
-        logWarning('GhostSolPrivacy initialization failed (expected on standard devnet)');
+        logWarning('ZeraPrivacy initialization failed (expected on standard devnet)');
         logInfo('Viewing keys work independently of full confidential transfer support');
       }
       
     } catch (error) {
-      logWarning(`GhostSolPrivacy integration test skipped: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      logWarning(`ZeraPrivacy integration test skipped: ${error instanceof Error ? error.message : 'Unknown error'}`);
       logInfo('This is acceptable - viewing keys can work independently');
     }
     
@@ -670,7 +670,7 @@ async function runViewingKeysE2ETest() {
       logInfo('3. Multiple auditors can be granted different permissions');
       logInfo('4. Privacy is maintained from unauthorized parties');
       logInfo('5. Users maintain full control via expiration and revocation');
-      logInfo('6. Integration with GhostSolPrivacy SDK is seamless');
+      logInfo('6. Integration with ZeraPrivacy SDK is seamless');
       
       process.exit(0);
     } else {

@@ -1,6 +1,6 @@
-# GhostSol SDK – Comprehensive API Reference
+# Zera SDK – Comprehensive API Reference
 
-Complete documentation for all public APIs, functions, and React components in the GhostSol SDK. The SDK supports two modes:
+Complete documentation for all public APIs, functions, and React components in the Zera SDK. The SDK supports two modes:
 
 - Efficiency mode: Uses ZK Compression for lower fees (public but cheap)
 - Privacy mode: Uses SPL Token 2022 Confidential Transfers for true transaction privacy
@@ -20,12 +20,12 @@ Complete documentation for all public APIs, functions, and React components in t
   - Utilities
   - Types and errors
 - Core class (efficiency mode)
-  - GhostSol
+  - Zera
 - Privacy class (privacy mode)
-  - GhostSolPrivacy
+  - ZeraPrivacy
 - React integration
-  - GhostSolProvider
-  - useGhostSol
+  - ZeraProvider
+  - useZera
 - Types
 - Error classes
 - Examples
@@ -39,7 +39,7 @@ Complete documentation for all public APIs, functions, and React components in t
 ## Installation
 
 ```bash
-npm install ghost-sol
+npm install zera
 ```
 
 ---
@@ -48,7 +48,7 @@ npm install ghost-sol
 
 ### Efficiency mode (default)
 ```typescript
-import { init, getAddress, getBalance, deposit, transfer, withdraw } from 'ghost-sol';
+import { init, getAddress, getBalance, deposit, transfer, withdraw } from 'zera';
 import { Keypair } from '@solana/web3.js';
 
 await init({ wallet: Keypair.generate(), cluster: 'devnet' });
@@ -63,7 +63,7 @@ await withdraw(0.05);          // decompress (unshield)
 
 ### Privacy mode
 ```typescript
-import { init, getAddress, getBalance, deposit, transfer, withdraw, decryptBalance, generateViewingKey } from 'ghost-sol';
+import { init, getAddress, getBalance, deposit, transfer, withdraw, decryptBalance, generateViewingKey } from 'zera';
 import { Keypair } from '@solana/web3.js';
 
 await init({
@@ -90,12 +90,12 @@ const vk = await generateViewingKey(); // share with auditor
 The package entry `sdk/src/index.ts` exposes the unified API and types.
 
 ### Initialization and mode
-- `init(config: GhostSolConfig): Promise<void>`: Initialize once. Selects mode based on `config.privacy?.mode`.
+- `init(config: ZeraConfig): Promise<void>`: Initialize once. Selects mode based on `config.privacy?.mode`.
 - `isInitialized(): boolean`: Whether initialized.
 - `getCurrentMode(): 'privacy' | 'efficiency'`: Current mode.
-- `getSdkInstance(): GhostSol | GhostSolPrivacy`: Advanced access to underlying instance.
+- `getSdkInstance(): Zera | ZeraPrivacy`: Advanced access to underlying instance.
 
-Config: `GhostSolConfig` (see Types)
+Config: `ZeraConfig` (see Types)
 
 ### Account and balances
 - `getAddress(): string`: Base58 wallet address.
@@ -128,19 +128,19 @@ Config: `GhostSolConfig` (see Types)
 - `getDetailedBalance(): Promise<CompressedBalance>`: Detailed compressed balance info.
 
 ### Types and errors re-exported
-- Types from `core/types`: `GhostSolConfig`, `WalletAdapter`, `ExtendedWalletAdapter`, `TransferResult`, `CompressedBalance`, `PrivacySdkConfig`
+- Types from `core/types`: `ZeraConfig`, `WalletAdapter`, `ExtendedWalletAdapter`, `TransferResult`, `CompressedBalance`, `PrivacySdkConfig`
 - Types from `privacy/types`: `PrivacyConfig`, `EncryptedBalance`, `EncryptedAmount`, `ViewingKey`, `PrivateTransferResult`
-- Errors: `GhostSolError`, `ValidationError`, `CompressionError`, `TransferError`, `DecompressionError`, `PrivacyError`, `EncryptionError`, `ProofGenerationError`, `ViewingKeyError`
+- Errors: `ZeraError`, `ValidationError`, `CompressionError`, `TransferError`, `DecompressionError`, `PrivacyError`, `EncryptionError`, `ProofGenerationError`, `ViewingKeyError`
 
 ---
 
 ## Core class (efficiency mode)
 
-### GhostSol
+### Zera
 Main class backing efficiency mode (ZK Compression). Constructed internally by `init`.
 
 Key methods:
-- `init(config: GhostSolConfig): Promise<void>`
+- `init(config: ZeraConfig): Promise<void>`
 - `getAddress(): string`
 - `getBalance(): Promise<number>`: lamports
 - `compress(lamports: number): Promise<string>`
@@ -158,7 +158,7 @@ Notes:
 
 ## Privacy class (privacy mode)
 
-### GhostSolPrivacy
+### ZeraPrivacy
 Main class backing privacy mode. Constructed internally by `init`.
 
 Key methods:
@@ -179,7 +179,7 @@ Notes:
 
 ## React integration
 
-### GhostSolProvider
+### ZeraProvider
 React context provider for SDK state and actions.
 
 Props:
@@ -189,14 +189,14 @@ Props:
 
 Usage:
 ```tsx
-import { GhostSolProvider } from 'ghost-sol/react';
+import { ZeraProvider } from 'zera/react';
 
-<GhostSolProvider wallet={wallet} cluster="devnet">
+<ZeraProvider wallet={wallet} cluster="devnet">
   <App />
-</GhostSolProvider>
+</ZeraProvider>
 ```
 
-### useGhostSol
+### useZera
 Hook to access state and actions from context.
 
 Returns:
@@ -212,10 +212,10 @@ Returns:
 
 Example:
 ```tsx
-import { useGhostSol } from 'ghost-sol/react';
+import { useZera } from 'zera/react';
 
 function WalletPanel() {
-  const { address, balance, compress, decompress, transfer, refresh, loading, error } = useGhostSol();
+  const { address, balance, compress, decompress, transfer, refresh, loading, error } = useZera();
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
   return (
@@ -234,9 +234,9 @@ function WalletPanel() {
 
 ## Types
 
-### GhostSolConfig
+### ZeraConfig
 ```typescript
-interface GhostSolConfig {
+interface ZeraConfig {
   wallet?: WalletAdapter;
   rpcUrl?: string;
   cluster?: 'devnet' | 'mainnet-beta';
@@ -305,7 +305,7 @@ interface EncryptedBalance {
 ---
 
 ## Error classes
-- `GhostSolError` (base)
+- `ZeraError` (base)
 - `ValidationError`
 - `CompressionError`
 - `TransferError`
@@ -332,7 +332,7 @@ try {
 
 ### Node: efficiency mode workflow
 ```typescript
-import { init, getAddress, getBalance, deposit, transfer, withdraw, fundDevnet } from 'ghost-sol';
+import { init, getAddress, getBalance, deposit, transfer, withdraw, fundDevnet } from 'zera';
 import { Keypair } from '@solana/web3.js';
 
 await init({ wallet: Keypair.generate(), cluster: 'devnet' });
@@ -349,7 +349,7 @@ await withdraw(0.05);
 
 ### Node: privacy mode workflow
 ```typescript
-import { init, getAddress, getBalance, deposit, transfer, withdraw, decryptBalance, generateViewingKey } from 'ghost-sol';
+import { init, getAddress, getBalance, deposit, transfer, withdraw, decryptBalance, generateViewingKey } from 'zera';
 import { Keypair } from '@solana/web3.js';
 
 await init({ wallet: Keypair.generate(), cluster: 'devnet', privacy: { mode: 'privacy', enableViewingKeys: true } });
@@ -369,18 +369,18 @@ console.log('Viewing Key:', vk);
 
 ### React: basic usage
 ```tsx
-import { GhostSolProvider, useGhostSol } from 'ghost-sol/react';
+import { ZeraProvider, useZera } from 'zera/react';
 
 function App() {
   return (
-    <GhostSolProvider wallet={wallet} cluster="devnet">
+    <ZeraProvider wallet={wallet} cluster="devnet">
       <Dashboard />
-    </GhostSolProvider>
+    </ZeraProvider>
   );
 }
 
 function Dashboard() {
-  const { address, balance, compress, transfer, decompress, refresh, loading, error } = useGhostSol();
+  const { address, balance, compress, transfer, decompress, refresh, loading, error } = useZera();
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
   return (
@@ -398,10 +398,10 @@ function Dashboard() {
 ### React: private transfer form
 ```tsx
 import React, { useState } from 'react';
-import { useGhostSol } from 'ghost-sol/react';
+import { useZera } from 'zera/react';
 
 function PrivateTransferForm() {
-  const { address, balance, compress, transfer, decompress, loading, error } = useGhostSol();
+  const { address, balance, compress, transfer, decompress, loading, error } = useZera();
   const [amount, setAmount] = useState('0.01');
   const [recipient, setRecipient] = useState('');
 

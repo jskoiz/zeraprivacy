@@ -161,7 +161,7 @@ npx tsx test/e2e-test.ts
 ### Project Structure
 
 ```
-ghost-sol/
+zera/
 ├── sdk/                    # Core SDK Package (5,000+ lines)
 │   ├── src/core/          # Efficiency mode (8 files)
 │   ├── src/privacy/       # Privacy mode (7 files)
@@ -273,13 +273,13 @@ GhostSOL enables developers to build:
 ### Installation
 
 ```bash
-npm install ghost-sol
+npm install zera
 ```
 
 ### Privacy Mode Example
 
 ```typescript
-import { init, deposit, transfer, withdraw } from 'ghost-sol';
+import { init, deposit, transfer, withdraw } from 'zera';
 import { Keypair } from '@solana/web3.js';
 
 const keypair = Keypair.generate();
@@ -303,18 +303,18 @@ await withdraw(0.5);                   // Unshield 0.5 SOL
 ### React Example
 
 ```tsx
-import { GhostSolProvider, useGhostSol } from 'ghost-sol/react';
+import { ZeraProvider, useZera } from 'zera/react';
 
 function App() {
   return (
-    <GhostSolProvider cluster="devnet" privacy={{ mode: 'privacy' }}>
+    <ZeraProvider cluster="devnet" privacy={{ mode: 'privacy' }}>
       <PrivateWallet />
-    </GhostSolProvider>
+    </ZeraProvider>
   );
 }
 
 function PrivateWallet() {
-  const { deposit, transfer, balance } = useGhostSol();
+  const { deposit, transfer, balance } = useZera();
   
   return (
     <div>

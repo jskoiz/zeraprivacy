@@ -115,7 +115,7 @@ jobs:
         run: |
           cd sdk
           npm publish --tag beta --access public --provenance
-          echo "✓ Published ghost-sol@${{ steps.version.outputs.version }} with beta tag"
+          echo "✓ Published zera@${{ steps.version.outputs.version }} with beta tag"
 
       - name: Publish to npm (stable)
         if: "!contains(steps.version.outputs.version, '-beta.')"
@@ -124,7 +124,7 @@ jobs:
         run: |
           cd sdk
           npm publish --access public --provenance
-          echo "✓ Published ghost-sol@${{ steps.version.outputs.version }} as latest"
+          echo "✓ Published zera@${{ steps.version.outputs.version }} as latest"
 
       - name: Create GitHub Release
         if: github.event_name == 'push'
@@ -139,11 +139,11 @@ jobs:
             
             ### Installation
             ```bash
-            npm install ghost-sol@${{ steps.version.outputs.version }}
+            npm install zera@${{ steps.version.outputs.version }}
             ```
             
             ### Links
-            - [npm Package](https://www.npmjs.com/package/ghost-sol/v/${{ steps.version.outputs.version }})
+            - [npm Package](https://www.npmjs.com/package/zera/v/${{ steps.version.outputs.version }})
             - [Documentation](https://github.com/${{ github.repository }}/blob/main/README.md)
             
             See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.
@@ -159,17 +159,17 @@ jobs:
           if [[ "${{ steps.version.outputs.version }}" == *"-beta."* ]]; then
             echo "**Install command:**" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-            echo "npm install ghost-sol@beta" >> $GITHUB_STEP_SUMMARY
+            echo "npm install zera@beta" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           else
             echo "**Install command:**" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-            echo "npm install ghost-sol" >> $GITHUB_STEP_SUMMARY
+            echo "npm install zera" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           fi
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Links:**" >> $GITHUB_STEP_SUMMARY
-          echo "- [npm Package](https://www.npmjs.com/package/ghost-sol)" >> $GITHUB_STEP_SUMMARY
+          echo "- [npm Package](https://www.npmjs.com/package/zera)" >> $GITHUB_STEP_SUMMARY
           echo "- [GitHub Repository](https://github.com/${{ github.repository }})" >> $GITHUB_STEP_SUMMARY
 
       - name: Notify on failure

@@ -1,16 +1,16 @@
 /**
- * GhostSolProvider.tsx
+ * ZeraProvider.tsx
  * 
  * Purpose: React context provider for managing SDK state in React applications
  * 
  * Dependencies:
  * - React for context and hooks
- * - Core GhostSol SDK functions
+ * - Core Zera SDK functions
  * - Wallet adapter types
  * 
  * Exports:
- * - GhostSolProvider - React context provider component
- * - GhostSolContext - React context type
+ * - ZeraProvider - React context provider component
+ * - ZeraContext - React context type
  */
 
 'use client';
@@ -23,9 +23,9 @@ async function loadSdk() {
 }
 
 /**
- * State interface for GhostSol context
+ * State interface for Zera context
  */
-interface GhostSolState {
+interface ZeraState {
   /** User's address */
   address: string | null;
   /** Compressed balance in lamports */
@@ -37,9 +37,9 @@ interface GhostSolState {
 }
 
 /**
- * Actions interface for GhostSol context
+ * Actions interface for Zera context
  */
-interface GhostSolActions {
+interface ZeraActions {
   /** Compress SOL (shield) */
   compress: (amount: number) => Promise<string>;
   /** Transfer compressed tokens */
@@ -53,14 +53,14 @@ interface GhostSolActions {
 }
 
 /**
- * Complete GhostSol context value
+ * Complete Zera context value
  */
-export interface GhostSolContextValue extends GhostSolState, GhostSolActions {}
+export interface ZeraContextValue extends ZeraState, ZeraActions {}
 
 /**
- * Props for GhostSolProvider component
+ * Props for ZeraProvider component
  */
-interface GhostSolProviderProps {
+interface ZeraProviderProps {
   /** Wallet adapter from @solana/wallet-adapter-react */
   wallet?: WalletAdapter;
   /** Solana cluster */
@@ -70,12 +70,12 @@ interface GhostSolProviderProps {
 }
 
 /**
- * Create GhostSol context
+ * Create Zera context
  */
-export const GhostSolContext = createContext<GhostSolContextValue | null>(null);
+export const ZeraContext = createContext<ZeraContextValue | null>(null);
 
 /**
- * GhostSolProvider component for managing SDK state in React applications
+ * ZeraProvider component for managing SDK state in React applications
  * 
  * This provider component handles:
  * - SDK initialization when wallet connects
@@ -84,15 +84,15 @@ export const GhostSolContext = createContext<GhostSolContextValue | null>(null);
  * - Wallet disconnection handling
  * 
  * @param props - Component props including wallet, cluster, and children
- * @returns JSX element providing GhostSol context
+ * @returns JSX element providing Zera context
  */
-export function GhostSolProvider({ 
+export function ZeraProvider({ 
   wallet, 
   cluster = 'devnet', 
   children 
-}: GhostSolProviderProps) {
+}: ZeraProviderProps) {
   // State management
-  const [state, setState] = useState<GhostSolState>({
+  const [state, setState] = useState<ZeraState>({
     address: null,
     balance: null,
     loading: false,
@@ -250,7 +250,7 @@ export function GhostSolProvider({
   };
 
   // Context value combining state and actions
-  const contextValue: GhostSolContextValue = {
+  const contextValue: ZeraContextValue = {
     ...state,
     compress: handleCompress,
     transfer: handleTransfer,
@@ -260,28 +260,28 @@ export function GhostSolProvider({
   };
 
   return (
-    <GhostSolContext.Provider value={contextValue}>
+    <ZeraContext.Provider value={contextValue}>
       {children}
-    </GhostSolContext.Provider>
+    </ZeraContext.Provider>
   );
 }
 
 /**
- * Hook to access GhostSol context
+ * Hook to access Zera context
  * 
- * This hook provides access to the GhostSol context value including
+ * This hook provides access to the Zera context value including
  * state (address, balance, loading, error) and actions (compress, transfer, etc.).
  * 
- * @returns GhostSol context value
- * @throws Error if used outside GhostSolProvider
+ * @returns Zera context value
+ * @throws Error if used outside ZeraProvider
  */
-export function useGhostSol(): GhostSolContextValue {
-  const context = useContext(GhostSolContext);
+export function useZera(): ZeraContextValue {
+  const context = useContext(ZeraContext);
   
   if (!context) {
     throw new Error(
-      'useGhostSol must be used within a GhostSolProvider. ' +
-      'Make sure to wrap your component tree with <GhostSolProvider>.'
+      'useZera must be used within a ZeraProvider. ' +
+      'Make sure to wrap your component tree with <ZeraProvider>.'
     );
   }
   

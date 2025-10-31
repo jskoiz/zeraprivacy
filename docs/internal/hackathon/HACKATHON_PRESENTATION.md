@@ -131,13 +131,13 @@ await transfer(recipientAddress, 0.2); // Private transfer
 
 ```typescript
 // Provider Setup (1 component)
-<GhostSolProvider cluster="devnet" privacy={{ mode: 'privacy' }}>
+<ZeraProvider cluster="devnet" privacy={{ mode: 'privacy' }}>
   <YourApp />
-</GhostSolProvider>
+</ZeraProvider>
 
 // Hook Usage (1 hook)
 function YourApp() {
-  const { deposit, transfer, balance } = useGhostSol();
+  const { deposit, transfer, balance } = useZera();
   return <button onClick={() => deposit(0.5)}>Shield SOL</button>
 }
 ```
@@ -277,18 +277,18 @@ cd examples/nextjs-demo && npm run dev
 ```
 sdk/
 ├── core/          # Efficiency mode (8 files)
-│   ├── ghost-sol.ts
+│   ├── zera.ts
 │   ├── compression.ts
 │   ├── balance.ts
 │   └── ...
 ├── privacy/       # Privacy mode (7 files)
-│   ├── ghost-sol-privacy.ts
+│   ├── zera-privacy.ts
 │   ├── confidential-transfer.ts
 │   ├── encryption.ts
 │   └── ...
 └── react/         # React integration (4 files)
-    ├── GhostSolProvider.tsx
-    ├── useGhostSol.ts
+    ├── ZeraProvider.tsx
+    ├── useZera.ts
     └── ...
 ```
 
@@ -483,13 +483,13 @@ npm test --workspace sdk
 ### Installation
 
 ```bash
-npm install ghost-sol
+npm install zera
 ```
 
 ### Privacy Mode
 
 ```typescript
-import { init, deposit, transfer } from 'ghost-sol';
+import { init, deposit, transfer } from 'zera';
 
 await init({ 
   wallet, 
@@ -628,7 +628,7 @@ npm test --workspace sdk
 
 ### Contact & Links
 
-- **Repository**: github.com/your-org/ghost-sol
+- **Repository**: github.com/your-org/zera
 - **Documentation**: See `/docs` folder
 - **Demo**: `examples/nextjs-demo`
 - **Support**: Open GitHub issue

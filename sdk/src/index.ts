@@ -3,7 +3,7 @@
  * 
  * Purpose: Main SDK entry point with dual-mode support (Privacy vs Efficiency)
  * 
- * This module provides the main interface for the GhostSol SDK, supporting
+ * This module provides the main interface for the Zera SDK, supporting
  * both privacy mode (true transaction privacy using confidential transfers)
  * and efficiency mode (cost optimization using ZK compression).
  * 
@@ -13,28 +13,28 @@
 
 import { Connection, Keypair, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { 
-  GhostSolConfig, 
+  ZeraConfig, 
   ExtendedWalletAdapter, 
   TransferResult, 
   CompressedBalance,
   PrivacySdkConfig 
 } from './core/types';
-import { GhostSol } from './core/ghost-sol';
-import { GhostSolPrivacy } from './privacy/ghost-sol-privacy';
+import { Zera } from './core/zera';
+import { ZeraPrivacy } from './privacy/zera-privacy';
 import { normalizeWallet, getWalletAddress } from './core/wallet';
-import { GhostSolError, ValidationError } from './core/errors';
+import { ZeraError, ValidationError } from './core/errors';
 
 // Global SDK instance
-let sdkInstance: GhostSol | null = null;
-let privacyInstance: GhostSolPrivacy | null = null;
+let sdkInstance: Zera | null = null;
+let privacyInstance: ZeraPrivacy | null = null;
 let currentMode: 'privacy' | 'efficiency' = 'efficiency'; // Default to efficiency for backward compatibility
 
 /**
- * Initialize the GhostSol SDK with dual-mode support
+ * Initialize the Zera SDK with dual-mode support
  * 
  * @param config - Configuration object supporting both privacy and efficiency modes
  * @returns Promise that resolves when initialization is complete
- * @throws GhostSolError if initialization fails
+ * @throws ZeraError if initialization fails
  * 
  * @example
  * // Efficiency mode (default - ZK Compression for cost savings)
@@ -54,7 +54,7 @@ let currentMode: 'privacy' | 'efficiency' = 'efficiency'; // Default to efficien
  *   }
  * });
  */
-export async function init(config: GhostSolConfig): Promise<void> {
+export async function init(config: ZeraConfig): Promise<void> {
   try {
     // Determine mode based on configuration
     const mode = config.privacy?.mode || 'efficiency';
@@ -66,7 +66,7 @@ export async function init(config: GhostSolConfig): Promise<void> {
         throw new ValidationError('Privacy configuration required for privacy mode');
       }
       
-      privacyInstance = new GhostSolPrivacy();
+      privacyInstance = new ZeraPrivacy();
       
       // Create connection
       const connection = new Connection(
@@ -83,13 +83,13 @@ export async function init(config: GhostSolConfig): Promise<void> {
       
     } else {
       // Initialize efficiency mode (existing functionality)
-      sdkInstance = new GhostSol();
+      sdkInstance = new Zera();
       await sdkInstance.init(config);
     }
     
   } catch (error) {
-    throw new GhostSolError(
-      `Failed to initialize GhostSol SDK in ${currentMode} mode: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    throw new ZeraError(
+      `Failed to initialize Zera SDK in ${currentMode} mode: ${error instanceof Error ? error.message : 'Unknown error'}`,
       'INITIALIZATION_ERROR',
       error instanceof Error ? error : undefined
     );
@@ -101,7 +101,7 @@ export async function init(config: GhostSolConfig): Promise<void> {
  * Works in both privacy and efficiency modes
  * 
  * @returns Base58 encoded wallet address
- * @throws GhostSolError if SDK not initialized
+ * @throws ZeraError if SDK not initialized
  */
 export function getAddress(): string {
   _assertInitialized();
@@ -186,7 +186,7 @@ export async function withdraw(amount: number, destination?: PublicKey): Promise
  * 
  * @param viewingKey - Optional viewing key for auditor access
  * @returns Decrypted balance in SOL
- * @throws GhostSolError if not in privacy mode
+ * @throws ZeraError if not in privacy mode
  */
 export async function decryptBalance(viewingKey?: any): Promise<number> {
   _assertPrivacyMode();
@@ -200,7 +200,7 @@ export async function decryptBalance(viewingKey?: any): Promise<number> {
  * Creates a viewing key that allows authorized parties to decrypt transactions
  * 
  * @returns Generated viewing key
- * @throws GhostSolError if not in privacy mode or viewing keys not enabled
+ * @throws ZeraError if not in privacy mode or viewing keys not enabled
  */
 export async function generateViewingKey(): Promise<any> {
   _assertPrivacyMode();
@@ -232,7 +232,7 @@ export async function createConfidentialAccount(mint?: PublicKey): Promise<Publi
  * @param viewKeypair - Optional view keypair (generated if not provided)
  * @param spendKeypair - Optional spend keypair (generated if not provided)
  * @returns Stealth meta-address
- * @throws GhostSolError if not in privacy mode
+ * @throws ZeraError if not in privacy mode
  */
 export function generateStealthMetaAddress(viewKeypair?: any, spendKeypair?: any): any {
   _assertPrivacyMode();
@@ -249,7 +249,7 @@ export function generateStealthMetaAddress(viewKeypair?: any, spendKeypair?: any
  * @param recipientMetaAddress - Recipient's stealth meta-address
  * @param ephemeralKeypair - Optional ephemeral keypair (generated if not provided)
  * @returns Stealth address and ephemeral key
- * @throws GhostSolError if not in privacy mode
+ * @throws ZeraError if not in privacy mode
  */
 export function generateStealthAddress(recipientMetaAddress: any, ephemeralKeypair?: any): any {
   _assertPrivacyMode();
@@ -267,7 +267,7 @@ export function generateStealthAddress(recipientMetaAddress: any, ephemeralKeypa
  * @param viewPrivateKey - User's view private key
  * @param ephemeralKeys - List of ephemeral keys from blockchain
  * @returns Array of detected stealth payments
- * @throws GhostSolError if not in privacy mode
+ * @throws ZeraError if not in privacy mode
  */
 export async function scanForPayments(
   metaAddress: any,
@@ -287,7 +287,7 @@ export async function scanForPayments(
  * @param payment - Detected stealth payment
  * @param spendPrivateKey - User's spend private key
  * @returns Private key for spending the stealth payment
- * @throws GhostSolError if not in privacy mode
+ * @throws ZeraError if not in privacy mode
  */
 export function deriveStealthSpendingKey(payment: any, spendPrivateKey: Uint8Array): Uint8Array {
   _assertPrivacyMode();
@@ -305,7 +305,7 @@ export function deriveStealthSpendingKey(payment: any, spendPrivateKey: Uint8Arr
  * @param metaAddress - Original meta-address
  * @param ephemeralPublicKey - Ephemeral public key used
  * @returns true if valid, false otherwise
- * @throws GhostSolError if not in privacy mode
+ * @throws ZeraError if not in privacy mode
  */
 export function verifyStealthAddress(
   stealthAddress: PublicKey,
@@ -327,7 +327,7 @@ export function verifyStealthAddress(
  * @param startSlot - Optional starting slot for scanning (default: scan recent blocks)
  * @param endSlot - Optional ending slot for scanning (default: current slot)
  * @returns Array of ephemeral keys found on-chain
- * @throws GhostSolError if not in privacy mode
+ * @throws ZeraError if not in privacy mode
  */
 export async function fetchEphemeralKeysFromBlockchain(
   startSlot?: number,
@@ -350,7 +350,7 @@ export async function fetchEphemeralKeysFromBlockchain(
  * @param startSlot - Optional starting slot for scanning
  * @param endSlot - Optional ending slot for scanning
  * @returns Array of detected stealth payments
- * @throws GhostSolError if not in privacy mode
+ * @throws ZeraError if not in privacy mode
  */
 export async function scanBlockchainForPayments(
   metaAddress: any,
@@ -394,7 +394,7 @@ export async function decompress(amount: number): Promise<string> {
  */
 export async function fundDevnet(lamports?: number): Promise<string> {
   if (currentMode === 'privacy') {
-    throw new GhostSolError(
+    throw new ZeraError(
       'Devnet funding not available in privacy mode. Fund the account manually.',
       'PRIVACY_MODE_ERROR'
     );
@@ -431,7 +431,7 @@ export function getCurrentMode(): 'privacy' | 'efficiency' {
  * Get current SDK instance (for advanced usage)
  * Returns appropriate instance based on current mode
  */
-export function getSdkInstance(): GhostSol | GhostSolPrivacy {
+export function getSdkInstance(): Zera | ZeraPrivacy {
   _assertInitialized();
   
   if (currentMode === 'privacy') {
@@ -445,8 +445,8 @@ export function getSdkInstance(): GhostSol | GhostSolPrivacy {
 
 function _assertInitialized(): void {
   if (!isInitialized()) {
-    throw new GhostSolError(
-      'GhostSol SDK not initialized. Call init() first.',
+    throw new ZeraError(
+      'Zera SDK not initialized. Call init() first.',
       'NOT_INITIALIZED_ERROR'
     );
   }
@@ -456,7 +456,7 @@ function _assertPrivacyMode(): void {
   _assertInitialized();
   
   if (currentMode !== 'privacy') {
-    throw new GhostSolError(
+    throw new ZeraError(
       'This function is only available in privacy mode. Initialize with privacy: { mode: "privacy" }',
       'PRIVACY_MODE_ERROR'  
     );
@@ -467,7 +467,7 @@ function _assertEfficiencyMode(): void {
   _assertInitialized();
   
   if (currentMode !== 'efficiency') {
-    throw new GhostSolError(
+    throw new ZeraError(
       'This function is only available in efficiency mode.',
       'EFFICIENCY_MODE_ERROR'
     );
@@ -476,7 +476,7 @@ function _assertEfficiencyMode(): void {
 
 // Export types for external usage
 export type { 
-  GhostSolConfig, 
+  ZeraConfig, 
   WalletAdapter, 
   ExtendedWalletAdapter, 
   TransferResult, 
@@ -499,7 +499,7 @@ export type {
 
 // Export error classes
 export { 
-  GhostSolError, 
+  ZeraError, 
   ValidationError, 
   CompressionError, 
   TransferError, 

@@ -5,7 +5,7 @@
  * 
  * Dependencies:
  * - @solana/web3.js for Keypair generation
- * - GhostSol SDK for testing operations
+ * - Zera SDK for testing operations
  * 
  * This script tests:
  * - SDK initialization
@@ -37,7 +37,7 @@ function getTestKeypair(): Keypair {
  * Main test function
  */
 async function runBasicTest() {
-  console.log('🚀 Starting GhostSol SDK Basic Test');
+  console.log('🚀 Starting Zera SDK Basic Test');
   console.log('=====================================');
 
   try {

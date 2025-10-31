@@ -66,7 +66,7 @@ A comprehensive E2E test suite covering the complete viewing keys workflow for c
    - Unique derivation paths per account
    - Different public and private key components
 
-10. **Test 10: Integration with GhostSolPrivacy SDK**
+10. **Test 10: Integration with ZeraPrivacy SDK**
     - Viewing keys integrate seamlessly with main SDK
     - Work independently of full confidential transfer support
 
@@ -118,7 +118,7 @@ Failed: 0 ❌
 3. Multiple auditors can be granted different permissions
 4. Privacy is maintained from unauthorized parties
 5. Users maintain full control via expiration and revocation
-6. Integration with GhostSolPrivacy SDK is seamless
+6. Integration with ZeraPrivacy SDK is seamless
 ```
 
 ---
@@ -197,7 +197,7 @@ npm run test:privacy               # Privacy prototype
 
 ---
 
-## Key Benefits for GhostSol
+## Key Benefits for Zera
 
 ### For Compliance
 - **Regulatory readiness**: Supports auditor access for compliance
@@ -230,7 +230,7 @@ All success criteria have been met:
 - Privacy guarantees verified
 - Integration with SDK confirmed
 
-This branch provides robust testing for the viewing keys feature, ensuring that GhostSol's compliance capabilities are production-ready while maintaining strong privacy guarantees.
+This branch provides robust testing for the viewing keys feature, ensuring that Zera's compliance capabilities are production-ready while maintaining strong privacy guarantees.
 
 ---
 

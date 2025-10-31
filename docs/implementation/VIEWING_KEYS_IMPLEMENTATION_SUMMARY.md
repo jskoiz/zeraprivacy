@@ -11,7 +11,7 @@ Implemented the `ViewingKeyManager` class with the following functionality:
 - **Validate viewing keys** based on expiration and permissions
 - **Account access control** to restrict viewing keys to specific accounts
 
-### 2. Updated `sdk/src/privacy/ghost-sol-privacy.ts`
+### 2. Updated `sdk/src/privacy/zera-privacy.ts`
 Added viewing key methods to the main privacy class:
 - `generateViewingKey(config?)` - Generate viewing key for current user
 - `decryptBalance(viewingKey?)` - Decrypt balance with optional viewing key
@@ -118,7 +118,7 @@ For a production system, implement one of:
 - ✅ `sdk/test/viewing-keys.test.ts` (402 lines)
 
 ### Modified Files
-- ✅ `sdk/src/privacy/ghost-sol-privacy.ts` - Added viewing key methods
+- ✅ `sdk/src/privacy/zera-privacy.ts` - Added viewing key methods
 - ✅ `sdk/src/privacy/encryption.ts` - Fixed cryptographic imports
 - ✅ `sdk/src/privacy/index.ts` - Exported ViewingKeyConfig
 

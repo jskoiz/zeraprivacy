@@ -27,7 +27,7 @@ Implemented a secure, centralized environment configuration system for GhostSOL 
 - `EnvConfigError` - Custom error class for config errors
 
 ### 2. Updated SDK Initialization
-**File**: `sdk/src/core/ghost-sol.ts`
+**File**: `sdk/src/core/zera.ts`
 
 **Changes**:
 - ✅ Integrated environment configuration validation into SDK initialization
@@ -133,7 +133,7 @@ Implemented a secure, centralized environment configuration system for GhostSOL 
    - `LINEAR_ISSUE_AVM-29_ENV_CONFIG_SECURITY.md` - Linear issue documentation
 
 2. **Modified Files**:
-   - `sdk/src/core/ghost-sol.ts` - Integrated env config validation
+   - `sdk/src/core/zera.ts` - Integrated env config validation
    - `docs/SETUP.md` - Updated with environment variable documentation
 
 ## Next Steps

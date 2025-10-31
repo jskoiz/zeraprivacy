@@ -1,6 +1,6 @@
-# Ghost Sol v1.0.0 - NPM Publish Checklist
+# Zera v1.0.0 - NPM Publish Checklist
 
-This document provides a comprehensive checklist and instructions for publishing Ghost Sol v1.0.0 to npm.
+This document provides a comprehensive checklist and instructions for publishing Zera v1.0.0 to npm.
 
 ---
 
@@ -96,14 +96,14 @@ ls -la dist/
 # Pack the package locally
 npm pack
 
-# This creates: ghost-sol-1.0.0.tgz
+# This creates: zera-1.0.0.tgz
 # Test installation in a separate project:
-# npm install /path/to/ghost-sol-1.0.0.tgz
+# npm install /path/to/zera-1.0.0.tgz
 ```
 
 ### 6. Verify Package Contents
 ```bash
-tar -tzf ghost-sol-1.0.0.tgz | head -20
+tar -tzf zera-1.0.0.tgz | head -20
 
 # Should see:
 # package/package.json
@@ -154,20 +154,20 @@ npm publish --access public
 
 **Expected Output**:
 ```
-+ ghost-sol@1.0.0
++ zera@1.0.0
 ```
 
 ### Step 4: Verify Publication
 
 ```bash
 # Check on npmjs.com
-open https://www.npmjs.com/package/ghost-sol
+open https://www.npmjs.com/package/zera
 
 # Or use npm view
-npm view ghost-sol
+npm view zera
 
 # Should show:
-# ghost-sol@1.0.0 | MIT | deps: 7 | versions: X
+# zera@1.0.0 | MIT | deps: 7 | versions: X
 ```
 
 ### Step 5: Test Installation
@@ -176,10 +176,10 @@ npm view ghost-sol
 # In a fresh directory
 mkdir test-install && cd test-install
 npm init -y
-npm install ghost-sol@1.0.0
+npm install zera@1.0.0
 
 # Verify it installed correctly
-node -e "console.log(require('ghost-sol'))"
+node -e "console.log(require('zera'))"
 ```
 
 ---
@@ -199,7 +199,7 @@ git push origin v1.0.0
 **Using GitHub CLI**:
 ```bash
 gh release create v1.0.0 \
-  --title "Ghost Sol v1.0.0 - Stable Release" \
+  --title "Zera v1.0.0 - Stable Release" \
   --notes-file docs/deployment/GITHUB_RELEASE_v1.0.0.md \
   --latest
 ```
@@ -207,7 +207,7 @@ gh release create v1.0.0 \
 **Using GitHub Web Interface**:
 1. Go to https://github.com/jskoiz/ghostsol/releases/new
 2. Select tag: `v1.0.0`
-3. Release title: `Ghost Sol v1.0.0 - Stable Release`
+3. Release title: `Zera v1.0.0 - Stable Release`
 4. Copy contents from `docs/deployment/GITHUB_RELEASE_v1.0.0.md`
 5. Mark as "Set as the latest release"
 6. Click "Publish release"
@@ -220,7 +220,7 @@ gh release create v1.0.0 \
 
 #### Twitter/X
 ```
-🎉 Ghost Sol v1.0.0 is LIVE! 
+🎉 Zera v1.0.0 is LIVE! 
 
 Build privacy-preserving Solana apps with just 3 lines of code:
 
@@ -229,7 +229,7 @@ Build privacy-preserving Solana apps with just 3 lines of code:
 ✅ ZK Compression
 ✅ React Support
 
-npm install ghost-sol@1.0.0
+npm install zera@1.0.0
 
 📚 Docs: github.com/jskoiz/ghostsol
 
@@ -238,9 +238,9 @@ npm install ghost-sol@1.0.0
 
 #### LinkedIn
 ```
-Excited to announce the v1.0.0 release of Ghost Sol SDK!
+Excited to announce the v1.0.0 release of Zera SDK!
 
-Ghost Sol makes it easy for developers to add privacy features to Solana applications using ZK Compression, stealth addresses, and viewing keys.
+Zera makes it easy for developers to add privacy features to Solana applications using ZK Compression, stealth addresses, and viewing keys.
 
 Key features:
 • Simple 3-line API for private transfers
@@ -256,12 +256,12 @@ Check it out: https://github.com/jskoiz/ghostsol
 
 #### Reddit (r/solana, r/solanadev)
 ```
-Title: [Release] Ghost Sol v1.0.0 - Privacy SDK for Solana
+Title: [Release] Zera v1.0.0 - Privacy SDK for Solana
 
 Body:
 Hey Solana devs! 👋
 
-I'm excited to share Ghost Sol v1.0.0, a privacy-focused SDK that makes it easy to add privacy features to your Solana applications.
+I'm excited to share Zera v1.0.0, a privacy-focused SDK that makes it easy to add privacy features to your Solana applications.
 
 Features:
 • ZK Compression for private transfers
@@ -270,7 +270,7 @@ Features:
 • Simple API (3 lines of code)
 • Full TypeScript and React support
 
-npm install ghost-sol@1.0.0
+npm install zera@1.0.0
 
 Docs: https://github.com/jskoiz/ghostsol
 
@@ -297,17 +297,17 @@ Would love your feedback!
 
 ```bash
 # Check latest version
-npm view ghost-sol version
+npm view zera version
 # Should return: 1.0.0
 
 # Check package info
-npm view ghost-sol
+npm view zera
 
 # Check downloads
-npm view ghost-sol downloads
+npm view zera downloads
 
 # Check dist-tags
-npm dist-tag ls ghost-sol
+npm dist-tag ls zera
 # Should show: latest: 1.0.0
 ```
 
@@ -319,16 +319,16 @@ Test installation in different environments:
 ```bash
 mkdir test-node && cd test-node
 npm init -y
-npm install ghost-sol
-node -e "const gs = require('ghost-sol'); console.log(gs)"
+npm install zera
+node -e "const gs = require('zera'); console.log(gs)"
 ```
 
 #### TypeScript
 ```bash
 mkdir test-ts && cd test-ts
 npm init -y
-npm install ghost-sol typescript @types/node
-echo 'import * as gs from "ghost-sol"; console.log(gs);' > test.ts
+npm install zera typescript @types/node
+echo 'import * as gs from "zera"; console.log(gs);' > test.ts
 npx tsc test.ts && node test.js
 ```
 
@@ -336,7 +336,7 @@ npx tsc test.ts && node test.js
 ```bash
 npx create-react-app test-react --template typescript
 cd test-react
-npm install ghost-sol
+npm install zera
 # Add import to App.tsx and verify
 ```
 
@@ -379,7 +379,7 @@ All of these should be ✅ before considering the release complete:
 **Solution**: Package version cannot be republished. Increment version and try again
 
 ### Issue: "Package name already taken"
-**Solution**: Use a scoped package name (e.g., @yourorg/ghost-sol)
+**Solution**: Use a scoped package name (e.g., @yourorg/zera)
 
 ### Issue: Build files missing from package
 **Solution**: Check `files` array in package.json and .npmignore
@@ -412,13 +412,13 @@ If critical issues are found after publishing:
 
 ### Option 1: Deprecate Version
 ```bash
-npm deprecate ghost-sol@1.0.0 "Critical bug found. Please use 1.0.1"
+npm deprecate zera@1.0.0 "Critical bug found. Please use 1.0.1"
 ```
 
 ### Option 2: Unpublish (within 24 hours only)
 ```bash
 # Only works within 24 hours of publishing
-npm unpublish ghost-sol@1.0.0
+npm unpublish zera@1.0.0
 ```
 
 **Note**: Unpublishing is discouraged by npm. Prefer publishing a fix instead.

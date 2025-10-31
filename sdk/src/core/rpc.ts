@@ -13,7 +13,7 @@
 
 import { Connection, Commitment } from '@solana/web3.js';
 import { createRpc } from '@lightprotocol/stateless.js';
-import { GhostSolConfig, NETWORKS, LIGHT_PROTOCOL_RPC_ENDPOINTS } from './types';
+import { ZeraConfig, NETWORKS, LIGHT_PROTOCOL_RPC_ENDPOINTS } from './types';
 
 /**
  * Create a ZK Compression RPC instance with proper configuration
@@ -25,7 +25,7 @@ import { GhostSolConfig, NETWORKS, LIGHT_PROTOCOL_RPC_ENDPOINTS } from './types'
  * @returns Configured RPC instance for ZK Compression operations
  * @throws Error if RPC configuration is invalid
  */
-export function createCompressedRpc(config: GhostSolConfig) {
+export function createCompressedRpc(config: ZeraConfig) {
   // Determine the network configuration
   const cluster = config.cluster || 'devnet';
   const networkConfig = NETWORKS[cluster];

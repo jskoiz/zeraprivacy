@@ -385,7 +385,7 @@ export HELIUS_KEY="your_helius_api_key"
 export RPC_URL="https://mainnet.helius-rpc.com/?api-key=$HELIUS_KEY"
 
 # 2. Generate withdrawal proof (client-side)
-npx ghost-sol withdraw --rpc $RPC_URL --amount 1.5 --to YOUR_WALLET
+npx zera withdraw --rpc $RPC_URL --amount 1.5 --to YOUR_WALLET
 
 # 3. If writes fail, deploy Forester
 git clone https://github.com/Lightprotocol/light-protocol
@@ -394,7 +394,7 @@ cargo build --release
 ./target/release/forester --rpc $RPC_URL --keypair ./forester-key.json
 
 # 4. Retry withdrawal (Forester processes queue)
-npx ghost-sol withdraw --rpc $RPC_URL --amount 1.5 --to YOUR_WALLET
+npx zera withdraw --rpc $RPC_URL --amount 1.5 --to YOUR_WALLET
 ```
 
 **Critical Files for Recovery:**

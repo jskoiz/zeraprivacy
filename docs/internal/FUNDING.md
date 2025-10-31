@@ -40,10 +40,10 @@ solana transfer --from FUNDED_KEYPAIR.json RECIPIENT_ADDRESS 2 --url devnet
 
 ## SDK Usage Without Airdrop
 
-The GhostSol SDK works perfectly without the airdrop function:
+The Zera SDK works perfectly without the airdrop function:
 
 ```typescript
-import { init, compress, transfer, decompress } from 'ghost-sol';
+import { init, compress, transfer, decompress } from 'zera';
 import { Keypair } from '@solana/web3.js';
 
 // Initialize with pre-funded keypair

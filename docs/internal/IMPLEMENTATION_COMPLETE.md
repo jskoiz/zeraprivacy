@@ -2,7 +2,7 @@
 
 ## Summary
 
-Successfully implemented all missing stealth address and payment scanning APIs for the GhostSol SDK. All APIs are now available at the main SDK level and properly integrated throughout the codebase.
+Successfully implemented all missing stealth address and payment scanning APIs for the Zera SDK. All APIs are now available at the main SDK level and properly integrated throughout the codebase.
 
 ## What Was Implemented
 
@@ -14,7 +14,7 @@ Successfully implemented all missing stealth address and payment scanning APIs f
 
 ### 2. New API: fetchEphemeralKeysFromBlockchain() ✅
 - **Status**: API structure complete (placeholder implementation)
-- **Location**: Implemented across all layers (StealthAddressManager → GhostSolPrivacy → main SDK)
+- **Location**: Implemented across all layers (StealthAddressManager → ZeraPrivacy → main SDK)
 - **Purpose**: Fetches ephemeral keys from blockchain transactions
 - **Note**: Placeholder returns empty array - full blockchain scanning to be implemented in future
 - **Test Result**: ✅ PASS
@@ -32,7 +32,7 @@ Successfully implemented all missing stealth address and payment scanning APIs f
    - Added `fetchEphemeralKeysFromBlockchain()` method
    - Added `scanBlockchainForPayments()` method
 
-2. **sdk/src/privacy/ghost-sol-privacy.ts** (+82 lines)
+2. **sdk/src/privacy/zera-privacy.ts** (+82 lines)
    - Exposed blockchain scanning methods at privacy class level
    - Proper error handling and initialization checks
 
@@ -48,7 +48,7 @@ Successfully implemented all missing stealth address and payment scanning APIs f
 
 ## Complete Stealth Address API Surface
 
-The GhostSol SDK now provides a complete stealth address implementation:
+The Zera SDK now provides a complete stealth address implementation:
 
 | API | Status | Description |
 |-----|--------|-------------|
@@ -85,38 +85,38 @@ The GhostSol SDK now provides a complete stealth address implementation:
 ## Usage Example
 
 ```typescript
-import * as GhostSol from 'ghost-sol';
+import * as Zera from 'zera';
 
 // Initialize in privacy mode
-await GhostSol.init({
+await Zera.init({
   wallet: keypair,
   cluster: 'devnet',
   privacy: { mode: 'privacy' }
 });
 
 // Generate meta-address
-const metaAddress = GhostSol.generateStealthMetaAddress(viewKey, spendKey);
+const metaAddress = Zera.generateStealthMetaAddress(viewKey, spendKey);
 
 // Create stealth payment
 const { stealthAddress, ephemeralKey } = 
-  GhostSol.generateStealthAddress(metaAddress);
+  Zera.generateStealthAddress(metaAddress);
 
 // NEW: Verify stealth address
-const isValid = GhostSol.verifyStealthAddress(
+const isValid = Zera.verifyStealthAddress(
   stealthAddress.address,
   metaAddress,
   ephemeralKey.publicKey
 );
 
 // NEW: Scan blockchain for payments (convenience method)
-const payments = await GhostSol.scanBlockchainForPayments(
+const payments = await Zera.scanBlockchainForPayments(
   metaAddress,
   viewPrivateKey
 );
 
 // Derive spending keys
 for (const payment of payments) {
-  const key = GhostSol.deriveStealthSpendingKey(payment, spendPrivateKey);
+  const key = Zera.deriveStealthSpendingKey(payment, spendPrivateKey);
 }
 ```
 

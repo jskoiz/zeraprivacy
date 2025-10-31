@@ -1,6 +1,6 @@
 # Internal Documentation
 
-This directory contains internal documentation, implementation summaries, and workflow guides primarily for the Ghost Sol core development team.
+This directory contains internal documentation, implementation summaries, and workflow guides primarily for the Zera core development team.
 
 ## 📋 Contents
 

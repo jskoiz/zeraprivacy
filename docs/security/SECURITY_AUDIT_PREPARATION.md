@@ -256,7 +256,7 @@ This document prepares the GhostSOL SDK for a comprehensive professional securit
 
 **Error Hierarchy**:
 ```
-GhostSolError (base)
+ZeraError (base)
 ├── CompressionError
 ├── TransferError
 ├── DecompressionError
@@ -299,7 +299,7 @@ GhostSolError (base)
 **Locations**:
 - `stealth-address.ts`: Basic length check (32 bytes)
 - `viewing-keys.ts`: PublicKey construction (throws on invalid)
-- `ghost-sol.ts`: PublicKey construction for recipient addresses
+- `zera.ts`: PublicKey construction for recipient addresses
 
 **Current Validation**:
 - ✅ PublicKey constructor validates base58 format
@@ -315,7 +315,7 @@ GhostSolError (base)
 ### 4.2 Amount Validation
 
 **Locations**:
-- `ghost-sol.ts`: `compress()`, `transfer()`, `decompress()`
+- `zera.ts`: `compress()`, `transfer()`, `decompress()`
 - `encryption.ts`: BigInt amounts in `encryptAmount()`
 
 **Current Validation**:

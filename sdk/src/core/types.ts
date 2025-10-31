@@ -1,13 +1,13 @@
 /**
  * types.ts
  * 
- * Purpose: Define TypeScript interfaces and types for the GhostSol SDK
+ * Purpose: Define TypeScript interfaces and types for the Zera SDK
  * 
  * Dependencies:
  * - @solana/web3.js for PublicKey and Connection types
  * 
  * Exports:
- * - GhostSolConfig - SDK initialization configuration
+ * - ZeraConfig - SDK initialization configuration
  * - WalletAdapter - Unified wallet interface
  * - TransferResult - Transaction result metadata
  * - CompressedBalance - Balance information for compressed accounts
@@ -17,9 +17,9 @@ import { PublicKey, Connection, Keypair } from '@solana/web3.js';
 import { Rpc } from '@lightprotocol/stateless.js';
 
 /**
- * Configuration options for initializing the GhostSol SDK
+ * Configuration options for initializing the Zera SDK
  */
-export interface GhostSolConfig {
+export interface ZeraConfig {
   /** Wallet instance - can be Keypair, wallet adapter, or undefined for CLI */
   wallet?: Keypair | WalletAdapter;
   /** Solana RPC endpoint URL (deprecated - use rpcConfig instead) */

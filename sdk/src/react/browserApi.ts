@@ -1,10 +1,10 @@
-import { GhostSol } from '../core/ghost-sol';
-import type { GhostSolConfig } from '../core/types';
+import { Zera } from '../core/zera';
+import type { ZeraConfig } from '../core/types';
 
-let sdk: GhostSol | null = null;
+let sdk: Zera | null = null;
 
-export async function init(config: GhostSolConfig): Promise<void> {
-  sdk = new GhostSol();
+export async function init(config: ZeraConfig): Promise<void> {
+  sdk = new Zera();
   await sdk.init({ ...config, privacy: undefined });
 }
 

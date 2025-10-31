@@ -129,7 +129,7 @@ git push origin main
 **Merge Into**: `main` or `develop`  
 
 **What to Build:**
-- `sdk/src/privacy/ghost-sol-privacy.ts` - Implement `encryptedDeposit()`
+- `sdk/src/privacy/zera-privacy.ts` - Implement `encryptedDeposit()`
   - Encrypt deposit amount
   - Generate range proofs
   - Submit deposit instruction
@@ -139,7 +139,7 @@ git push origin main
 **Key Files:**
 ```
 sdk/src/privacy/
-├── ghost-sol-privacy.ts       (UPDATE - add encryptedDeposit)
+├── zera-privacy.ts       (UPDATE - add encryptedDeposit)
 ├── confidential-transfer.ts   (IMPORTED from branch 2)
 └── encryption.ts              (IMPORTED from branch 1)
 
@@ -170,7 +170,7 @@ git push origin main
 **Merge Into**: `main` or `develop`  
 
 **What to Build:**
-- `sdk/src/privacy/ghost-sol-privacy.ts` - Implement `privateTransfer()`
+- `sdk/src/privacy/zera-privacy.ts` - Implement `privateTransfer()`
   - Generate transfer proofs (validity + range)
   - Encrypt for sender, recipient, auditor
   - Submit confidential transfer instruction
@@ -179,7 +179,7 @@ git push origin main
 **Key Files:**
 ```
 sdk/src/privacy/
-└── ghost-sol-privacy.ts       (UPDATE - add privateTransfer)
+└── zera-privacy.ts       (UPDATE - add privateTransfer)
 
 sdk/test/privacy/
 └── transfer.test.ts           (NEW - integration tests)
@@ -208,7 +208,7 @@ git push origin main
 **Merge Into**: `main` or `develop`  
 
 **What to Build:**
-- `sdk/src/privacy/ghost-sol-privacy.ts` - Implement `encryptedWithdraw()`
+- `sdk/src/privacy/zera-privacy.ts` - Implement `encryptedWithdraw()`
   - Decrypt balance for withdrawal
   - Generate withdrawal proofs
   - Move from encrypted → regular balance
@@ -217,7 +217,7 @@ git push origin main
 **Key Files:**
 ```
 sdk/src/privacy/
-└── ghost-sol-privacy.ts       (UPDATE - add encryptedWithdraw)
+└── zera-privacy.ts       (UPDATE - add encryptedWithdraw)
 
 sdk/test/privacy/
 └── withdraw.test.ts           (NEW - integration tests)
@@ -257,7 +257,7 @@ git push origin main
 ```
 sdk/src/privacy/
 ├── viewing-keys.ts            (NEW - implement)
-└── ghost-sol-privacy.ts       (UPDATE - add viewing key methods)
+└── zera-privacy.ts       (UPDATE - add viewing key methods)
 
 sdk/test/privacy/
 └── viewing-keys.test.ts       (NEW - tests)
@@ -545,7 +545,7 @@ git push origin main
 **Key Files:**
 ```
 sdk/src/privacy/
-├── ghost-sol-privacy.ts      (UPDATE - integrate wSOL)
+├── zera-privacy.ts      (UPDATE - integrate wSOL)
 └── wsol-wrapper.ts           (IMPORTED from branch 11)
 
 sdk/test/privacy/

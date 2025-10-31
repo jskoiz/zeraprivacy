@@ -1,10 +1,10 @@
-# Contributing to Ghost Sol SDK
+# Contributing to Zera SDK
 
-Thank you for your interest in contributing to Ghost Sol SDK! We welcome contributions from the community.
+Thank you for your interest in contributing to Zera SDK! We welcome contributions from the community.
 
 ## 🎯 Project Goals
 
-Ghost Sol SDK aims to provide a **simple, secure, and production-ready** privacy SDK for Solana developers. Our core principles:
+Zera SDK aims to provide a **simple, secure, and production-ready** privacy SDK for Solana developers. Our core principles:
 
 - **Simplicity**: 3-line API for private transfers
 - **Security**: Cryptographic best practices and thorough testing
@@ -127,7 +127,7 @@ import { Connection } from '@solana/web3.js';
 import { WalletAdapter } from '../types';
 
 // 2. Types and interfaces
-export interface GhostSolConfig {
+export interface ZeraConfig {
   wallet: WalletAdapter;
   cluster: 'devnet' | 'mainnet-beta';
 }
@@ -136,7 +136,7 @@ export interface GhostSolConfig {
 const DEFAULT_COMMITMENT = 'confirmed';
 
 // 4. Main class/functions
-export class GhostSol {
+export class Zera {
   // Implementation
 }
 
@@ -148,7 +148,7 @@ function privateHelper() {
 
 ### Naming Conventions
 
-- **Classes**: PascalCase (`GhostSol`, `StealthAddress`)
+- **Classes**: PascalCase (`Zera`, `StealthAddress`)
 - **Functions**: camelCase (`generateStealthAddress`, `scanPayments`)
 - **Constants**: UPPER_SNAKE_CASE (`DEFAULT_RPC_URL`)
 - **Interfaces**: PascalCase with descriptive names (`StealthMetaAddress`)
@@ -399,6 +399,6 @@ By contributing, you agree that your contributions will be licensed under the MI
 
 ---
 
-**Thank you for contributing to Ghost Sol SDK!** 🎉
+**Thank you for contributing to Zera SDK!** 🎉
 
 Every contribution, no matter how small, helps make privacy more accessible on Solana.
