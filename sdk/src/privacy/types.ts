@@ -177,3 +177,64 @@ export interface PrivacySdkConfig {
   /** Commitment level */
   commitment?: 'processed' | 'confirmed' | 'finalized';
 }
+
+/**
+ * Stealth meta-address for receiving stealth payments
+ * Users publish this publicly to allow others to generate stealth addresses
+ */
+export interface StealthMetaAddress {
+  /** Viewing public key (public) */
+  viewingPublicKey: PublicKey;
+  /** Spending public key (public) */
+  spendingPublicKey: PublicKey;
+  /** Viewing secret key (private, for scanning) */
+  viewingSecretKey: Uint8Array;
+  /** Spending secret key (private, for spending) */
+  spendingSecretKey: Uint8Array;
+}
+
+/**
+ * One-time stealth address for receiving payments
+ */
+export interface StealthAddress {
+  /** The one-time stealth address to send payment to */
+  address: PublicKey;
+  /** Ephemeral public key (included in transaction for recipient to detect) */
+  ephemeralPublicKey: PublicKey;
+  /** Ephemeral private key (kept by sender, can be discarded after tx) */
+  ephemeralPrivateKey?: Uint8Array;
+  /** Shared secret (derived via ECDH) */
+  sharedSecret?: Uint8Array;
+}
+
+/**
+ * Detected stealth payment from scanning
+ */
+export interface StealthPayment {
+  /** Transaction signature */
+  signature: string;
+  /** Amount received (in lamports) */
+  amount: number;
+  /** The stealth address that received the payment */
+  stealthAddress: PublicKey;
+  /** Block time when transaction was confirmed */
+  blockTime: number | null;
+  /** Ephemeral public key from the transaction */
+  ephemeralKey: PublicKey;
+  /** Slot number */
+  slot: number;
+}
+
+/**
+ * Configuration for payment scanning
+ */
+export interface PaymentScanConfig {
+  /** Interval between background scans (ms) */
+  scanIntervalMs?: number;
+  /** Number of transactions to scan per batch */
+  batchSize?: number;
+  /** Maximum number of transactions to scan */
+  maxTransactions?: number;
+  /** Program ID to filter transactions (for optimization) */
+  programId?: PublicKey;
+}

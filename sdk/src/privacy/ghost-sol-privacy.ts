@@ -24,7 +24,11 @@ import {
   ConfidentialMint,
   ConfidentialAccount,
   ViewingKey,
-  ZKProof
+  ZKProof,
+  StealthMetaAddress,
+  StealthAddress,
+  StealthPayment,
+  PaymentScanConfig
 } from './types';
 import { 
   PrivacyError, 
@@ -36,6 +40,8 @@ import {
 import { ConfidentialTransferManager } from './confidential-transfer';
 import { EncryptionUtils } from './encryption';
 import { ViewingKeyManager } from './viewing-keys';
+import { StealthAddressManager } from './stealth-address';
+import { PaymentScanner } from './payment-scanner';
 import { ExtendedWalletAdapter } from '../core/types';
 
 /**
@@ -52,6 +58,9 @@ export class GhostSolPrivacy {
   private confidentialTransferManager!: ConfidentialTransferManager;
   private encryptionUtils!: EncryptionUtils;
   private viewingKeyManager!: ViewingKeyManager;
+  private stealthAddressManager?: StealthAddressManager;
+  private paymentScanner?: PaymentScanner;
+  private stealthMetaAddress?: StealthMetaAddress;
   private confidentialMint?: ConfidentialMint;
   private confidentialAccount?: ConfidentialAccount;
   private initialized = false;
@@ -374,6 +383,148 @@ export class GhostSolPrivacy {
         error instanceof Error ? error : undefined
       );
     }
+  }
+
+  // Stealth Address Methods
+
+  /**
+   * Generate a stealth meta-address for receiving stealth payments
+   * This should be done once and the public keys published
+   * 
+   * @returns StealthMetaAddress with viewing and spending keys
+   */
+  generateStealthMetaAddress(): StealthMetaAddress {
+    this._assertInitialized();
+    
+    if (!this.stealthAddressManager) {
+      this.stealthAddressManager = new StealthAddressManager(this.connection);
+    }
+    
+    try {
+      this.stealthMetaAddress = this.stealthAddressManager.generateStealthMetaAddress();
+      return this.stealthMetaAddress;
+    } catch (error) {
+      throw new PrivacyError(
+        `Failed to generate stealth meta-address: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error : undefined
+      );
+    }
+  }
+
+  /**
+   * Generate a one-time stealth address for a recipient
+   * 
+   * @param recipientMetaAddress - Recipient's published stealth meta-address
+   * @returns StealthAddress with ephemeral keys
+   */
+  generateStealthAddress(recipientMetaAddress: StealthMetaAddress): StealthAddress {
+    this._assertInitialized();
+    
+    if (!this.stealthAddressManager) {
+      this.stealthAddressManager = new StealthAddressManager(this.connection);
+    }
+    
+    try {
+      return this.stealthAddressManager.generateStealthAddress(recipientMetaAddress);
+    } catch (error) {
+      throw new PrivacyError(
+        `Failed to generate stealth address: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error : undefined
+      );
+    }
+  }
+
+  /**
+   * Get the current stealth meta-address
+   * 
+   * @returns Current stealth meta-address or undefined
+   */
+  getStealthMetaAddress(): StealthMetaAddress | undefined {
+    return this.stealthMetaAddress;
+  }
+
+  // Payment Scanning Methods
+
+  /**
+   * Enable automatic payment scanning
+   * 
+   * @param onPaymentReceived - Callback when payment is detected
+   * @param config - Optional scan configuration
+   */
+  async enablePaymentScanning(
+    onPaymentReceived: (payment: StealthPayment) => void,
+    config?: PaymentScanConfig
+  ): Promise<void> {
+    this._assertInitialized();
+    
+    if (!this.stealthMetaAddress) {
+      throw new PrivacyError('No stealth meta-address available. Call generateStealthMetaAddress() first.');
+    }
+    
+    try {
+      this.paymentScanner = new PaymentScanner(
+        this.connection,
+        this.stealthMetaAddress,
+        config
+      );
+      
+      // Start background scan
+      await this.paymentScanner.startBackgroundScan(onPaymentReceived);
+      
+      console.log('Payment scanning enabled. You will be notified of incoming payments.');
+    } catch (error) {
+      throw new PrivacyError(
+        `Failed to enable payment scanning: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error : undefined
+      );
+    }
+  }
+
+  /**
+   * Manually scan for payments (one-time scan)
+   * 
+   * @returns Array of detected stealth payments
+   */
+  async scanForPayments(): Promise<StealthPayment[]> {
+    this._assertInitialized();
+    
+    if (!this.stealthMetaAddress) {
+      throw new PrivacyError('No stealth meta-address available. Call generateStealthMetaAddress() first.');
+    }
+    
+    if (!this.paymentScanner) {
+      this.paymentScanner = new PaymentScanner(
+        this.connection,
+        this.stealthMetaAddress
+      );
+    }
+    
+    try {
+      return await this.paymentScanner.scanForPayments();
+    } catch (error) {
+      throw new PrivacyError(
+        `Failed to scan for payments: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error : undefined
+      );
+    }
+  }
+
+  /**
+   * Stop background payment scanning
+   */
+  stopPaymentScanning(): void {
+    if (this.paymentScanner) {
+      this.paymentScanner.stopBackgroundScan();
+    }
+  }
+
+  /**
+   * Get payment scanner instance
+   * 
+   * @returns PaymentScanner or undefined
+   */
+  getPaymentScanner(): PaymentScanner | undefined {
+    return this.paymentScanner;
   }
 
   // Private helper methods
