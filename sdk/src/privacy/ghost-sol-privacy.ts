@@ -621,6 +621,7 @@ export class GhostSolPrivacy {
     try {
       return await this.stealthAddressManager.fetchEphemeralKeysFromBlockchain(
         this.connection,
+        undefined,
         startSlot,
         endSlot
       );
@@ -657,6 +658,7 @@ export class GhostSolPrivacy {
         this.connection,
         metaAddress,
         viewPrivateKey,
+        undefined,
         startSlot,
         endSlot
       );
