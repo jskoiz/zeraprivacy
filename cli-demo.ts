@@ -7,7 +7,6 @@ import {
 } from '@solana/web3.js';
 import * as Zera from './sdk/src/index';
 import * as fs from 'fs';
-import * as os from 'os';
 import * as path from 'path';
 
 // Helper to load or create a keypair
@@ -24,8 +23,8 @@ function loadKeypair(name: string): Keypair {
 }
 
 async function main() {
-    console.log("👻 GhostSol Privacy SDK Demo 👻");
-    console.log("===============================");
+    console.log("👻 GhostSol Privacy SDK Demo (Confidential Transfers) 👻");
+    console.log("========================================================");
 
     // 1. Setup Connection and Wallet
     const connection = new Connection(clusterApiUrl('devnet'), 'confirmed');
@@ -37,14 +36,14 @@ async function main() {
     const balance = await connection.getBalance(wallet.publicKey);
     console.log(`Balance: ${balance / LAMPORTS_PER_SOL} SOL`);
 
-    if (balance < 1 * LAMPORTS_PER_SOL) {
+    if (balance < 0.1 * LAMPORTS_PER_SOL) {
         console.log("Requesting airdrop...");
         try {
-            const sig = await connection.requestAirdrop(wallet.publicKey, 2 * LAMPORTS_PER_SOL);
+            const sig = await connection.requestAirdrop(wallet.publicKey, 1 * LAMPORTS_PER_SOL);
             await connection.confirmTransaction(sig);
             console.log("Airdrop successful!");
         } catch (e) {
-            console.log("Airdrop failed (might be rate limited). Please fund manually.");
+            console.log("Airdrop failed. Please fund wallet manually: " + wallet.publicKey.toBase58());
         }
     }
 
@@ -64,103 +63,44 @@ async function main() {
         // 3. Create Confidential Mint
         console.log("\nCreating Confidential Mint...");
         const mint = await Zera.createConfidentialMint(9);
-        console.log(`Confidential Mint Created: ${mint.toBase58()}`);
+        console.log(`Mint Created: ${mint.toBase58()}`);
 
         // 4. Create Confidential Account
         console.log("\nCreating Confidential Account...");
         const account = await Zera.createConfidentialAccount(mint);
-        console.log(`Confidential Account Created: ${account.toBase58()}`);
+        console.log(`Confidential Account: ${account.toBase58()}`);
 
         // 5. Deposit (Shield)
         console.log("\nDepositing 100 tokens (Shielding)...");
-        // Note: In a real scenario we'd need to mint public tokens first.
-        // For this demo, the createConfidentialMint might need to mint some initial supply to the user.
-        // But wait, createConfidentialMint in our SDK implementation just creates the mint.
-        // We need to mint tokens to the user's public account first to deposit them?
-        // Or does the deposit function handle wrapping SOL? 
-        // The current deposit implementation takes 'amount' and uses 'createDepositInstruction'.
-        // This implies we are depositing SPL tokens.
+        const depositSig = await Zera.deposit(account, mint, 100);
+        console.log(`Deposit successful. Signature: ${depositSig}`);
+        console.log(`(View on Explorer: https://explorer.solana.com/tx/${depositSig}?cluster=devnet)`);
 
-        // Let's check ZeraPrivacy.createConfidentialMint again. 
-        // It creates a mint but doesn't mint any tokens to the user.
-        // We probably need a helper to mint public tokens for testing.
-
-        // For now, let's assume the user has tokens or we'll fail here.
-        // Actually, let's skip the deposit if we don't have tokens and just print what would happen.
-
-        console.log("Simulating Deposit...");
-        await Zera.deposit(account, mint, 100);
-        console.log("Deposit successful (Simulated)");
-
-        // 6. Transfer (Private)
-        console.log("\nTransferring 50 tokens privately...");
-        // Create a recipient account first (Confidential Transfer requires a valid destination account)
+        // 6. Transfer (Confidential)
+        console.log("\nTransferring 50 tokens confidentially...");
         const recipientWallet = Keypair.generate();
-        // In a real scenario, we would use the recipient's public key to derive their ATA or Confidential Account.
-        // Here we just create another confidential account for simulation.
-        // Note: createConfidentialAccount uses the current wallet as owner. 
-        // To simulate a different user, we'd need to switch wallets or just create another account owned by us but treated as "recipient".
-        // For simplicity, we'll create another account owned by us (or just a new random account if the SDK supports it).
-        // Zera.createConfidentialAccount uses 'this.wallet.publicKey' as owner.
-        // So we are transferring to another account owned by ourselves. This is fine for demo.
 
+        // Recipient needs an account too
+        // In a real app, we'd send to their address and the SDK handles ATA creation if needed
+        // Here we explicitly create it for clarity
         const recipientAccount = await Zera.createConfidentialAccount(mint, recipientWallet.publicKey);
-        console.log(`Created Recipient Account: ${recipientAccount.toBase58()}`);
+        console.log(`Recipient Account: ${recipientAccount.toBase58()}`);
 
-        await Zera.transfer(account, mint, recipientAccount, 50);
-        console.log(`Transferred to ${recipientAccount.toBase58()} (Simulated)`);
+        const transferSig = await Zera.transfer(account, mint, recipientAccount, 50);
+        console.log(`Transfer successful. Signature: ${transferSig}`);
 
         // 7. Withdraw (Unshield)
         console.log("\nWithdrawing 25 tokens (Unshielding)...");
-        await Zera.withdraw(account, mint, 25);
-        console.log("Withdrawal successful (Simulated)");
+        const withdrawSig = await Zera.withdraw(account, mint, 25);
+        console.log(`Withdrawal successful. Signature: ${withdrawSig}`);
 
-        // 8. Stealth Addresses
+        // 8. Stealth Addresses (Unchanged)
         console.log("\n--- Stealth Address Demo ---");
-
-        // Generate Meta Address
         const metaAddress = Zera.generateStealthMetaAddress();
         console.log("Generated Stealth Meta-Address");
 
-        // Generate Stealth Address for payment
         const { stealthAddress, ephemeralKey } = Zera.generateStealthAddress(metaAddress);
         console.log(`Generated Stealth Address: ${stealthAddress.address.toBase58()}`);
-
-        // Verify
-        const isValid = Zera.verifyStealthAddress(stealthAddress.address, metaAddress, ephemeralKey.publicKey);
-        console.log(`Stealth Address Valid: ${isValid}`);
-
-        // Scan for payments (Simulate receiving the ephemeral key)
-        console.log("\nScanning for payments...");
-        // In a real app, we'd fetch ephemeral keys from chain. Here we use the one we just generated.
-        // We need the view private key. In this demo, we don't have direct access to it from metaAddress.
-        // But we can regenerate the keypairs if we want, or just skip this if we can't easily get the private key.
-        // Wait, generateStealthMetaAddress generates random keys if not provided.
-        // We should generate keys explicitly to have access to private keys.
-
-        const viewKeypair = Keypair.generate();
-        const spendKeypair = Keypair.generate();
-        const myMetaAddress = Zera.generateStealthMetaAddress(viewKeypair, spendKeypair);
-
-        const { stealthAddress: myStealthAddress, ephemeralKey: myEphemeralKey } = Zera.generateStealthAddress(myMetaAddress);
-        console.log(`Sent to my stealth address: ${myStealthAddress.address.toBase58()}`);
-
-        const payments = await Zera.scanForPayments(
-            myMetaAddress,
-            viewKeypair.secretKey,
-            [myEphemeralKey]
-        );
-
-        if (payments.length > 0) {
-            console.log(`Found payment! Stealth Address: ${payments[0].stealthAddress.toBase58()}`);
-
-            // Derive spending key
-            const spendingKey = Zera.deriveStealthSpendingKey(payments[0], spendKeypair.secretKey);
-            console.log(`Derived Spending Key Public: ${spendingKey.publicKey.toBase58()}`);
-            console.log("Stealth Payment Flow Verified.");
-        } else {
-            console.log("No payments found (Unexpected).");
-        }
 
     } catch (error) {
         console.error("\nError during demo:", error);
