@@ -1,78 +1,119 @@
-# GhostSol SDK
+# 👻 GhostSol Privacy SDK
 
-**Privacy-focused SDK for Solana developers using ZK Compression technology.**
+GhostSol is a privacy-first SDK for Solana, enabling confidential transactions and stealth addresses for autonomous agents and privacy-conscious applications.
 
-GhostSol provides a simple, developer-friendly interface for integrating private transfers into your Solana applications and agents. It leverages Light Protocol's ZK Compression to enable shielded transactions.
+Built on **SPL Token 2022 Confidential Transfers** and **Elliptic Curve Diffie-Hellman (ECDH)** stealth address protocols.
 
-## Features
+> **Note:** This SDK is currently in **Simulation Mode** for Confidential Transfers due to limitations in client-side Zero-Knowledge Proof generation in JavaScript. It simulates the confidential transfer flow using standard Token 2022 instructions where possible, or placeholders for heavy ZK operations. Stealth Addresses are fully functional.
 
-- 🛡️ **ZK Compression**: Shield SOL and tokens using zero-knowledge proofs.
-- 🕵️ **Stealth Addresses**: Generate one-time addresses for true unlinkability (powered by standard Ed25519 crypto).
-- 🤖 **Agent-Ready**: Designed for autonomous agents (Node.js) to manage private funds.
-- ⚡ **Simple API**: `compress`, `transfer`, `decompress` in just a few lines.
+## 🚀 Features
 
-## Installation
+- **Confidential Transfers**: Shield, transfer, and unshield tokens privately using SPL Token 2022 (Simulated).
+- **Stealth Addresses**: Generate one-time addresses for every transaction to break on-chain linkability.
+- **Privacy-First**: No "Efficiency Mode" or compression trade-offs. Pure privacy focus.
+- **Agent-Ready**: Designed for autonomous agents to manage private funds programmatically.
 
-```bash
-npm install ghost-sol
-```
-
-## Quick Start (CLI / Agents)
-
-GhostSol is perfect for autonomous agents running in a Node.js environment.
-
-### 1. Run the Demo
-
-We provide a ready-to-run CLI demo that simulates two agents (Alice and Bob) exchanging private funds.
+## 📦 Installation
 
 ```bash
-# Clone the repo
-git clone https://github.com/jskoiz/ghostsol.git
-cd ghostsol
-
-# Install dependencies
-npm install
-
-# Run the demo
-npx tsx examples/cli-demo.ts
+npm install ghostsol
+# or
+yarn add ghostsol
 ```
 
-### 2. Use in Your Code
+## 🛠️ Usage
+
+### Initialization
 
 ```typescript
-import { init, compress, transfer, decompress } from 'ghost-sol';
-import { Keypair } from '@solana/web3.js';
+import * as Zera from 'ghostsol';
+import { Keypair, Connection } from '@solana/web3.js';
 
-// 1. Initialize with your agent's keypair
-const agentKeypair = Keypair.fromSecretKey(...);
-await init({
-  wallet: agentKeypair,
-  cluster: 'devnet' // or 'mainnet-beta'
+const connection = new Connection('https://api.devnet.solana.com');
+const wallet = Keypair.generate(); // Your wallet
+
+await Zera.init({
+  cluster: 'devnet',
+  wallet: wallet,
+  privacy: {
+    mode: 'privacy',
+    enableViewingKeys: true
+  }
 });
-
-// 2. Shield funds (Public SOL -> Private SOL)
-const sig1 = await compress(1000000000); // 1 SOL
-
-// 3. Transfer privately
-const sig2 = await transfer('RecipientPublicKey...', 500000000); // 0.5 SOL
-
-// 4. Unshield funds (Private SOL -> Public SOL)
-const sig3 = await decompress(100000000); // 0.1 SOL
 ```
 
-## Architecture
+### Confidential Transfers (Simulation)
 
-GhostSol is built on top of:
-- **@lightprotocol/stateless.js**: For ZK proof generation and RPC interaction.
-- **@solana/web3.js**: For standard Solana interaction.
-- **@noble/curves**: For secure cryptographic operations.
+```typescript
+// Create a Confidential Mint
+const mint = await Zera.createConfidentialMint();
 
-## Important Note on Browser Support
+// Create a Confidential Account
+const account = await Zera.createConfidentialAccount(mint);
 
-Currently, GhostSol requires a raw `Keypair` to generate ZK proofs on the client side. This means it is primarily designed for **server-side applications** or **autonomous agents** where the private key is available.
+// Shield (Deposit)
+await Zera.deposit(account, mint, 100);
 
-Standard browser wallets (Phantom, Solflare) do not expose private keys, so client-side ZK proving is not directly supported with them yet. For web applications, we recommend using a backend service to handle the ZK operations.
+// Transfer Privately
+const recipientAccount = await Zera.createConfidentialAccount(mint, recipientPublicKey);
+await Zera.transfer(account, mint, recipientAccount, 50);
 
-## License
+// Unshield (Withdraw)
+await Zera.withdraw(account, mint, 25);
+```
+
+### Stealth Addresses
+
+```typescript
+// 1. Recipient generates a Meta-Address (publicly shareable)
+const metaAddress = Zera.generateStealthMetaAddress();
+
+// 2. Sender generates a Stealth Address for the recipient
+const { stealthAddress, ephemeralKey } = Zera.generateStealthAddress(metaAddress);
+
+// 3. Sender sends funds to `stealthAddress.address`
+console.log("Send funds to:", stealthAddress.address.toBase58());
+
+// 4. Recipient scans for payments
+const payments = await Zera.scanForPayments(
+    metaAddress, 
+    viewPrivateKey, // Recipient's view private key
+    [ephemeralKey]  // List of ephemeral keys found on-chain (e.g. from memo or event)
+);
+
+if (payments.length > 0) {
+    // 5. Recipient derives the spending key
+    const spendingKey = Zera.deriveStealthSpendingKey(payments[0], spendPrivateKey);
+    console.log("Recovered funds with key:", spendingKey.publicKey.toBase58());
+}
+```
+
+## 🎮 Running the Demo
+
+The SDK includes a CLI demo that showcases the full privacy lifecycle.
+
+1. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+2. **Run the demo**:
+   ```bash
+   npx tsx cli-demo.ts
+   ```
+
+The demo will:
+- Airdrop SOL to a demo wallet.
+- Create a Confidential Mint and Account.
+- Simulate Shielding, Private Transfer, and Unshielding.
+- Generate a Stealth Address and verify the payment scanning flow.
+
+## 🔒 Security
+
+- **Cryptography**: Uses `@noble/curves` (Ed25519) and `@noble/hashes` (SHA512/SHA256) for secure ECDH and key derivation.
+- **Token 2022**: Leverages the official SPL Token 2022 program for account management.
+- **Non-Custodial**: The SDK never stores your private keys.
+
+## 📄 License
 
 MIT

@@ -2,6 +2,7 @@
   "name": "zera",
   "version": "1.0.0",
   "description": "Zera is a developer-first privacy SDK that makes private transactions simple",
+  "type": "module",
   "workspaces": [
     "sdk",
     "examples/nextjs-demo"
@@ -21,4 +22,3 @@
     "node": ">=18.0.0"
   }
 }
-
