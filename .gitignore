@@ -83,3 +83,5 @@ instructions/
 *.swp
 *~
 .cache
+docs
+
