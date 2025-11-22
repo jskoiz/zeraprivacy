@@ -174,10 +174,25 @@ export class ZeraPrivacy {
   verifyStealthAddress(
     stealthAddress: PublicKey,
     metaAddress: StealthMetaAddress,
-    ephemeralPublicKey: PublicKey
+    ephemeralPublicKey: PublicKey,
+    viewPrivateKey?: Uint8Array
   ): boolean {
     this._assertInitialized();
-    return true;
+    // If viewPrivateKey is not provided, we can't verify as a receiver.
+    // However, if we are just checking format, that's weak.
+    // We assume the caller provides the view key to verify ownership/derivation.
+
+    if (!viewPrivateKey) {
+      console.warn("verifyStealthAddress called without viewPrivateKey. Cannot verify derivation.");
+      return false;
+    }
+
+    return this.stealthAddressManager.verifyStealthAddress(
+      stealthAddress,
+      metaAddress,
+      ephemeralPublicKey,
+      viewPrivateKey
+    );
   }
 
   // Private helpers

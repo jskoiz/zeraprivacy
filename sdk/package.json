@@ -32,42 +32,16 @@
     "test:e2e-basic": "tsx test/e2e-basic-workflow.test.ts",
     "test:production-elgamal": "tsx test/production-elgamal.test.ts"
   },
-  "dependencies": {
-    "@lightprotocol/stateless.js": "^0.21.0",
-    "@lightprotocol/compressed-token": "^0.21.0",
-    "@solana/web3.js": "^1.98.0",
-    "@coral-xyz/anchor": "^0.30.1",
-    "@solana/spl-token": "^0.4.0",
-    "@noble/curves": "^1.4.0",
-    "@noble/hashes": "^1.4.0"
-  },
-  "devDependencies": {
-    "typescript": "^5.5.0",
-    "tsup": "^8.0.0",
-    "tsx": "^4.7.0",
-    "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0"
-  },
-  "peerDependencies": {
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0"
-  },
-  "keywords": [
-    "solana",
-    "privacy",
-    "zk-compression",
-    "stealth-addresses",
-    "cryptocurrency",
-    "blockchain"
-  ],
-  "author": "Zera Team",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/jskoiz/zera.git"
-  },
-  "bugs": {
-    "url": "https://github.com/jskoiz/zera/issues"
-  },
-  "homepage": "https://github.com/jskoiz/zera#readme"
+  "blockchain"
+],
+"author": "Zera Team",
+"license": "MIT",
+"repository": {
+  "type": "git",
+  "url": "https://github.com/jskoiz/zera.git"
+},
+"bugs": {
+  "url": "https://github.com/jskoiz/zera/issues"
+},
+"homepage": "https://github.com/jskoiz/zera#readme"
 }

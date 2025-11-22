@@ -61,7 +61,7 @@ async function main() {
 
     try {
         // 3. Create Confidential Mint
-        console.log("\nCreating Confidential Mint...");
+        console.log("\nCreating Confidential Mint (Token 2022)...");
         const mint = await Zera.createConfidentialMint(9);
         console.log(`Mint Created: ${mint.toBase58()}`);
 
@@ -81,8 +81,6 @@ async function main() {
         const recipientWallet = Keypair.generate();
 
         // Recipient needs an account too
-        // In a real app, we'd send to their address and the SDK handles ATA creation if needed
-        // Here we explicitly create it for clarity
         const recipientAccount = await Zera.createConfidentialAccount(mint, recipientWallet.publicKey);
         console.log(`Recipient Account: ${recipientAccount.toBase58()}`);
 
@@ -94,13 +92,32 @@ async function main() {
         const withdrawSig = await Zera.withdraw(account, mint, 25);
         console.log(`Withdrawal successful. Signature: ${withdrawSig}`);
 
-        // 8. Stealth Addresses (Unchanged)
-        console.log("\n--- Stealth Address Demo ---");
+        // 8. Stealth Addresses (Secure)
+        console.log("\n--- Stealth Address Demo (Secure) ---");
         const metaAddress = Zera.generateStealthMetaAddress();
         console.log("Generated Stealth Meta-Address");
 
         const { stealthAddress, ephemeralKey } = Zera.generateStealthAddress(metaAddress);
         console.log(`Generated Stealth Address: ${stealthAddress.address.toBase58()}`);
+
+        // Verify
+        console.log("Verifying Stealth Address derivation...");
+        // Note: In a real app, the receiver would do this with their private key.
+        // For demo, we don't have the view private key exposed easily from the meta address generator
+        // unless we generated the keypair ourselves.
+
+        // Let's manually verify to show it works
+        // We need the view private key corresponding to metaAddress.viewPublicKey
+        // But generateStealthMetaAddress hides it inside the function if we don't pass it.
+
+        // Re-generate with known keys for verification demo
+        const viewKey = Keypair.generate();
+        const spendKey = Keypair.generate();
+        const metaAddress2 = Zera.generateStealthMetaAddress(viewKey, spendKey);
+        const { stealthAddress: sa2, ephemeralKey: ek2 } = Zera.generateStealthAddress(metaAddress2);
+
+        const isValid = Zera.verifyStealthAddress(sa2.address, metaAddress2, ek2.publicKey, viewKey.secretKey);
+        console.log(`Verification Result: ${isValid ? "✅ VALID" : "❌ INVALID"}`);
 
     } catch (error) {
         console.error("\nError during demo:", error);

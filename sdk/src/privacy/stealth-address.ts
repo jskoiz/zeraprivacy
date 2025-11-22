@@ -187,6 +187,49 @@ export class StealthAddressManager {
     };
   }
 
+  /**
+   * Verify that a stealth address was correctly derived from the meta-address and ephemeral key.
+   * Requires the recipient's view private key.
+   */
+  verifyStealthAddress(
+    stealthAddress: PublicKey,
+    metaAddress: StealthMetaAddress,
+    ephemeralPublicKey: PublicKey,
+    viewPrivateKey: Uint8Array
+  ): boolean {
+    try {
+      // 1. Compute shared secret using viewing key
+      // sharedSecret = hash(ephemeralPublic * viewingPrivate)
+
+      const viewPrivBytes = viewPrivateKey.length === 64 ? viewPrivateKey.slice(0, 32) : viewPrivateKey;
+      const viewScalar = this.getScalarFromSeed(viewPrivBytes);
+
+      const ephemeralPubBytes = ephemeralPublicKey.toBytes();
+      const ephemeralPoint = ed25519.ExtendedPoint.fromHex(ephemeralPubBytes);
+
+      const sharedPoint = ephemeralPoint.multiply(viewScalar);
+      const sharedSecret = sha256(sharedPoint.toRawBytes());
+
+      // 2. Derive expected stealth address
+      // expected = spendingPublic + hash(sharedSecret) * G
+
+      const offsetScalar = this.hashToScalar(sharedSecret);
+      const offsetPoint = ed25519.ExtendedPoint.BASE.multiply(offsetScalar);
+
+      const spendingPubBytes = metaAddress.spendPublicKey.toBytes();
+      const spendingPoint = ed25519.ExtendedPoint.fromHex(spendingPubBytes);
+
+      const expectedStealthPoint = spendingPoint.add(offsetPoint);
+      const expectedStealthAddress = new PublicKey(expectedStealthPoint.toRawBytes());
+
+      return expectedStealthAddress.equals(stealthAddress);
+
+    } catch (error) {
+      console.error("Stealth verification failed:", error);
+      return false;
+    }
+  }
+
   private getScalarFromSeed(seed: Uint8Array): bigint {
     const hash = sha512(seed);
     const s = hash.slice(0, 32);
